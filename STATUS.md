@@ -3,7 +3,7 @@
 One-page, honest status of the Elasticsearch Search Platform.
 Reviewed against the actual repository, not from memory.
 
-Last updated at commit: `be9ac3a` (Phase 26.4).
+Last updated after Phase 26.6 (history cleanup).
 
 ---
 
