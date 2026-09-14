@@ -1,0 +1,15 @@
+# Development and quality tooling.
+#
+# Install with:
+#     pip install -r requirements-dev.txt
+#
+# The `-r requirements.txt` line ensures runtime dependencies are always
+# available in the development environment.
+
+-r requirements.txt
+
+pytest>=8.3,<9.0
+pytest-django>=4.9,<5.0
+pytest-cov>=6.0,<7.0
+ruff>=0.6,<1.0
+mypy>=1.11,<2.0

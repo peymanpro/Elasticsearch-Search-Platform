@@ -1,0 +1,11 @@
+# Runtime dependencies.
+#
+# This file is intentionally empty at Phase 1.1.
+# Dependencies are added incrementally so that each entry is traceable
+# to a specific sub-phase:
+#
+#   Phase 1.2 — Django, Django REST Framework
+#   Phase 1.4 — elasticsearch (official Python client)
+#   Phase 1.5 — drf-spectacular (OpenAPI / Swagger)
+#
+# Format: one package per line, pinned at the minor level.

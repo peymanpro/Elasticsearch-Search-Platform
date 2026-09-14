@@ -1,4 +1,4 @@
-﻿# Normalize all text files to LF in the repository.
+# Normalize all text files to LF in the repository.
 * text=auto eol=lf
 
 # Python, config, docs, data — always LF

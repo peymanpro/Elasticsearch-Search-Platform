@@ -1,0 +1,87 @@
+# Project metadata and tool configuration.
+#
+# Runtime and development dependencies are declared in requirements.txt
+# and requirements-dev.txt respectively. This file exists for:
+#   1. Declarative project metadata (name, version, authors, Python).
+#   2. Centralized configuration of ruff, mypy, and pytest.
+#
+# The project is an application, not a distributable library, so it is
+# not installed via `pip install -e .`. Use the requirements files.
+
+[project]
+name = "elasticsearch-search-platform"
+version = "0.1.0"
+description = "A production-oriented Elasticsearch search platform demonstrating senior-level search engineering."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Peyman Salimi", email = "pmnslm6344@gmail.com" },
+]
+license = { text = "Proprietary" }
+
+# ------------------------------------------------------------------
+# Ruff — linter and formatter
+# ------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [
+    ".venv",
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",  # line length handled by formatter
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config", "elasticsearch"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+# ------------------------------------------------------------------
+# Mypy — static type checker
+# ------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true
+exclude = [
+    '\.venv',
+    "build",
+    "dist",
+]
+
+# ------------------------------------------------------------------
+# Pytest — test runner
+# ------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-ra --strict-markers --strict-config"

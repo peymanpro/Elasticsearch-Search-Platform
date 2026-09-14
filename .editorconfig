@@ -1,0 +1,29 @@
+# Editor configuration — enforces UTF-8 without BOM and LF line endings
+# across editors that honour .editorconfig (VS Code, JetBrains, Sublime,
+# Vim with the plugin, etc.).
+#
+# The project has already been bitten once by a UTF-8 BOM ending up at the
+# start of pyproject.toml and breaking TOML parsers. This file makes the
+# intended encoding explicit.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml,json,jsonl,toml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.ps1]
+end_of_line = crlf
+
+[Makefile]
+indent_style = tab
