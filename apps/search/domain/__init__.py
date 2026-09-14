@@ -21,6 +21,11 @@ from apps.search.domain.ports import ClusterHealthProbe
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchHit, SearchResults
 from apps.search.domain.service_status import ServiceState, ServiceStatus
+from apps.search.domain.strategies import (
+    ProductSearchGateway,
+    SearchExecutionStrategy,
+    SearchIntent,
+)
 
 __all__ = [
     "ClusterHealthProbe",
@@ -28,7 +33,10 @@ __all__ = [
     "InvalidPaginationError",
     "InvalidSearchQueryError",
     "Pagination",
+    "ProductSearchGateway",
+    "SearchExecutionStrategy",
     "SearchHit",
+    "SearchIntent",
     "SearchQuery",
     "SearchResults",
     "ServiceState",
