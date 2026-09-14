@@ -7,8 +7,8 @@ application layers depend solely on the ``ClusterHealthProbe`` Protocol
 defined in ``apps.search.domain.ports``.
 
 The underlying Elasticsearch client lifecycle is owned by the top-level
-``infrastructure.elasticsearch.client`` package (established in Phase 1.4).
-This adapter does not create its own client; it consumes the managed one.
+``infrastructure.elasticsearch`` package. This adapter does not create its
+own client; it consumes the managed one.
 """
 
 from __future__ import annotations
@@ -39,3 +39,34 @@ class ElasticsearchClusterHealthProbe:
     def is_reachable(self) -> bool:
         """Return True if the search backend reports itself reachable."""
         return bool(self._ping())
+
+
+class StaticReachabilityProbe:
+    """
+    Probe that always reports a fixed reachability value.
+
+    This is a legitimate production strategy, not a test double. It exists
+    for two concrete situations:
+
+    1. Fail-fast operational testing. Deploying with a static
+       ``reachable=False`` makes the service report itself as degraded
+       without contacting Elasticsearch. Useful for demonstrating failure
+       handling and for integration fixtures that must exercise the
+       degraded path deterministically.
+
+    2. Explicit "no backend configured" state. A configuration can opt in
+       to a permanently degraded status without the network timeout cost of
+       probing an unreachable host.
+
+    Adding this strategy did not require any modification to the
+    ``ClusterHealthProbe`` Protocol, ``GetServiceStatusUseCase``,
+    ``ServiceRootView``, or any serializer. The Open/Closed Principle is
+    demonstrated by that fact alone.
+    """
+
+    def __init__(self, reachable: bool) -> None:
+        self._reachable = reachable
+
+    def is_reachable(self) -> bool:
+        """Return the configured reachability value."""
+        return self._reachable
