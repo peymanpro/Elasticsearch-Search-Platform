@@ -52,3 +52,27 @@ def cluster_info() -> dict:
     silently converted into an empty dict.
     """
     return get_client().info()
+
+
+def cluster_health() -> dict:
+    """
+    Return the cluster's health response.
+
+    Unlike :func:`ping`, failures propagate. Callers use this when
+    they need the health status specifically -- integration tests,
+    the operational endpoints of Phase 23, and the observability
+    metrics of Phase 24 -- and silently returning a default would
+    hide the very condition those callers are asking about.
+    """
+    return get_client().cluster.health()
+
+
+def nodes_info() -> dict:
+    """
+    Return the cluster's node-level information.
+
+    The response is a mapping of node id to node details, wrapped
+    under a ``nodes`` key. It is used by integration tests to assert
+    node roles and count, and by the operational tooling of Phase 23.
+    """
+    return get_client().nodes.info()
