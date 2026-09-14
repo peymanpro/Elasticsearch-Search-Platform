@@ -1,7 +1,36 @@
 """
 Domain layer.
 
-Contains the domain model and the search rules that are true regardless of
-which framework, transport, or storage engine is used. Must not import
-Django, DRF, or the Elasticsearch client. Filled in during Phase 2.3.
+Contains the domain model and the rules that are true regardless of which
+framework, transport, or storage engine is used. Nothing in this package
+imports Django, Django REST Framework, or the Elasticsearch client; the
+project's Phase 2.5 dependency-rule tests enforce this.
+
+The public surface of the domain layer is re-exported here so that
+consumers (the application layer, in particular) can import from a single
+stable location.
 """
+
+from apps.search.domain.exceptions import (
+    DomainError,
+    InvalidPaginationError,
+    InvalidSearchQueryError,
+)
+from apps.search.domain.pagination import Pagination
+from apps.search.domain.ports import ClusterHealthProbe
+from apps.search.domain.search_query import SearchQuery
+from apps.search.domain.search_result import SearchHit, SearchResults
+from apps.search.domain.service_status import ServiceState, ServiceStatus
+
+__all__ = [
+    "ClusterHealthProbe",
+    "DomainError",
+    "InvalidPaginationError",
+    "InvalidSearchQueryError",
+    "Pagination",
+    "SearchHit",
+    "SearchQuery",
+    "SearchResults",
+    "ServiceState",
+    "ServiceStatus",
+]
