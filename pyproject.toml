@@ -50,7 +50,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["apps", "config", "elasticsearch"]
+known-first-party = ["apps", "config", "elasticsearch", "infrastructure"]
 
 [tool.ruff.format]
 quote-style = "double"

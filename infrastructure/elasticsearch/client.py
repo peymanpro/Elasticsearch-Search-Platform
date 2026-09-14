@@ -21,7 +21,6 @@ import logging
 from functools import lru_cache
 
 from elasticsearch import Elasticsearch
-
 from infrastructure.elasticsearch.config import ElasticsearchSettings
 
 logger = logging.getLogger(__name__)

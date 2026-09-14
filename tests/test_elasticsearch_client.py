@@ -13,8 +13,8 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-from elasticsearch import Elasticsearch
 
+from elasticsearch import Elasticsearch
 from infrastructure.elasticsearch.client import (
     cluster_info,
     get_client,
@@ -49,7 +49,9 @@ def _clean_client_cache() -> None:
 # Settings parsing
 # ---------------------------------------------------------------------------
 class TestElasticsearchSettings:
-    def test_defaults_apply_when_environment_is_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_defaults_apply_when_environment_is_empty(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         for key in _ES_ENV_KEYS:
             monkeypatch.delenv(key, raising=False)
 
