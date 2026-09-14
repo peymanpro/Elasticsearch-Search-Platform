@@ -77,11 +77,35 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: esp-web
-    command: python manage.py runserver 0.0.0.0:8000
+    # Run Django's built-in migrations before starting the server. The
+    # platform does not use a relational database as its system of record
+    # (docs/02-non-goals.md section 3.3), but Django's bundled apps
+    # (contenttypes, auth) ship migrations that DRF expects to be applied.
+    # Because the database is in-memory SQLite, running migrate is cheap
+    # and idempotent on each container start, and prevents the
+    # "You have N unapplied migration(s)" warning from being printed.
+    command:
+      - "sh"
+      - "-c"
+      - "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
     environment:
       - DJANGO_DEBUG=true
       - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,web
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      # Persist Django's framework SQLite database to a file inside the
+      # container. The container runs `migrate` and `runserver` as separate
+      # processes; an in-memory database would not survive between them, and
+      # Django would print the "unapplied migrations" warning on every boot.
+      # The path is intentionally inside /tmp so it never touches the mounted
+      # source tree.
+      - DJANGO_SQLITE_PATH=/tmp/esp-db.sqlite3
+      # Persist Django's framework SQLite database to a file inside the
+      # container. The container runs `migrate` and `runserver` as separate
+      # processes; an in-memory database would not survive between them, and
+      # Django would print the "unapplied migrations" warning on every boot.
+      # The path is intentionally inside /tmp so it never touches the mounted
+      # source tree.
+      - DJANGO_SQLITE_PATH=/tmp/esp-db.sqlite3
     volumes:
       - .:/app
     ports:

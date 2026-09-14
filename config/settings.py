@@ -92,12 +92,28 @@ ASGI_APPLICATION = "config.asgi.application"
 # ---------------------------------------------------------------------------
 # The platform does not use a relational database as its system of record
 # (docs/02-non-goals.md section 3.3). Django still requires a DATABASES
-# entry to boot; in-memory SQLite satisfies the framework without writing
-# any artifact to disk.
+# entry to boot, and Django's bundled apps (contenttypes, auth) ship
+# migrations that must be applied for the framework to be consistent.
+#
+# The path is configurable so that two scenarios both work:
+#
+#   * On the host (tests, ad-hoc management commands): :memory: is the
+#     default. Nothing persists, which is fine because the tests create
+#     and tear down their own isolated database.
+#
+#   * Inside the web container: DJANGO_SQLITE_PATH points at a writable
+#     file path inside the container (see docker-compose.yml). A file is
+#     required because the container runs `migrate` and `runserver` as
+#     two separate processes; an in-memory database would be created by
+#     `migrate`, discarded when that process exits, and then missing when
+#     `runserver` starts — which causes Django to print the "unapplied
+#     migrations" warning on every boot.
+SQLITE_PATH = os.environ.get("DJANGO_SQLITE_PATH", ":memory:")
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
+        "NAME": SQLITE_PATH,
     }
 }
 
