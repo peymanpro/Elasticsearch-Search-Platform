@@ -1,11 +1,8 @@
 # Runtime dependencies.
 #
-# This file is intentionally empty at Phase 1.1.
-# Dependencies are added incrementally so that each entry is traceable
-# to a specific sub-phase:
-#
-#   Phase 1.2 — Django, Django REST Framework
-#   Phase 1.4 — elasticsearch (official Python client)
-#   Phase 1.5 — drf-spectacular (OpenAPI / Swagger)
-#
-# Format: one package per line, pinned at the minor level.
+# Each dependency is added at the phase in which it becomes necessary, so
+# that this file documents the runtime surface and its origin.
+
+# Phase 1.2 — Django application framework
+Django>=5.2,<5.3
+python-dotenv>=1.0,<2.0
