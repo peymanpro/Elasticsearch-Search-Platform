@@ -1,26 +1,19 @@
 """
-Unit tests for the Elasticsearch client lifecycle and settings.
+Unit tests for the Elasticsearch client lifecycle.
 
 These tests do not require a running Elasticsearch cluster. They exercise
-configuration parsing and lifecycle management, mocking the underlying
-client where network behavior would otherwise be required. Integration
-tests against a live cluster arrive in Phase 1.6, once Docker Compose is
-in place.
+configuration parsing and client lifecycle management, mocking the
+underlying client where network behavior would otherwise be required.
+Cluster-level helpers (``ping``, ``cluster_info``) are tested separately
+in ``test_elasticsearch_health.py``.
 """
 
 from __future__ import annotations
 
-from unittest.mock import patch
-
 import pytest
 
 from elasticsearch import Elasticsearch
-from infrastructure.elasticsearch.client import (
-    cluster_info,
-    get_client,
-    ping,
-    reset_client_cache,
-)
+from infrastructure.elasticsearch.client import get_client, reset_client_cache
 from infrastructure.elasticsearch.config import (
     DEFAULT_MAX_RETRIES,
     DEFAULT_TIMEOUT,
@@ -112,28 +105,3 @@ class TestClientLifecycle:
         reset_client_cache()
         second = get_client()
         assert first is not second
-
-
-# ---------------------------------------------------------------------------
-# Health-check helpers
-# ---------------------------------------------------------------------------
-class TestHealthHelpers:
-    def test_ping_returns_true_when_cluster_responds(self) -> None:
-        with patch.object(Elasticsearch, "ping", return_value=True):
-            assert ping() is True
-
-    def test_ping_returns_false_when_cluster_is_unreachable(self) -> None:
-        with patch.object(Elasticsearch, "ping", side_effect=ConnectionError("refused")):
-            assert ping() is False
-
-    def test_cluster_info_returns_client_response(self) -> None:
-        payload = {"cluster_name": "test", "version": {"number": "8.15.0"}}
-        with patch.object(Elasticsearch, "info", return_value=payload):
-            assert cluster_info() == payload
-
-    def test_cluster_info_propagates_failures(self) -> None:
-        with (
-            patch.object(Elasticsearch, "info", side_effect=ConnectionError("refused")),
-            pytest.raises(ConnectionError),
-        ):
-            cluster_info()

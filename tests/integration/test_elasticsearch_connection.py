@@ -23,7 +23,8 @@ from __future__ import annotations
 
 import pytest
 
-from infrastructure.elasticsearch.client import cluster_info, get_client, ping
+from infrastructure.elasticsearch.client import get_client
+from infrastructure.elasticsearch.health import cluster_info, ping
 
 pytestmark = pytest.mark.integration
 

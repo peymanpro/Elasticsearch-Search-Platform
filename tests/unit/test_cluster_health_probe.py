@@ -60,7 +60,9 @@ def test_unexpected_errors_from_ping_propagate() -> None:
 def test_default_ping_is_the_managed_client_ping() -> None:
     # When no callable is injected, the adapter must delegate to the
     # managed client's ping, not to a stub or an unrelated function.
-    from infrastructure.elasticsearch import client as client_module
+    # The ping helper lives in ``infrastructure.elasticsearch.health``
+    # since Phase 3.1, when the client module was split.
+    from infrastructure.elasticsearch import health as health_module
 
     probe = ElasticsearchClusterHealthProbe()
-    assert probe._ping is client_module.ping
+    assert probe._ping is health_module.ping

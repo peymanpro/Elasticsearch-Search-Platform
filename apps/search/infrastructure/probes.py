@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from infrastructure.elasticsearch.client import ping as _default_ping
+from infrastructure.elasticsearch.health import ping as _default_ping
 
 
 class ElasticsearchClusterHealthProbe:

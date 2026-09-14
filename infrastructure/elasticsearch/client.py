@@ -1,15 +1,17 @@
 """
 Elasticsearch client lifecycle.
 
-Responsibilities:
+Responsibilities of this module, and nothing else:
 
-* Build a single, process-wide Elasticsearch client from environment-driven
-  settings.
-* Expose it through ``get_client()``.
-* Allow tests and configuration changes to discard the cached client via
-  ``reset_client_cache()``.
-* Provide two health-check helpers used by later phases (API health
-  endpoint in Phase 19.6, operational resilience in Phase 23).
+    * Build a single, process-wide Elasticsearch client from
+      environment-driven settings.
+    * Expose it through ``get_client()``.
+    * Allow tests and configuration changes to discard the cached client
+      via ``reset_client_cache()``.
+
+Cluster-level helpers that ask the client questions -- reachability,
+identity -- live in ``health.py``. Keeping them out of this module is a
+deliberate Single Responsibility decision, recorded during Phase 3.1.
 
 This module does not create indices, define mappings, or issue queries.
 Those responsibilities belong to later phases.
@@ -65,29 +67,3 @@ def reset_client_cache() -> None:
     underlying settings may have changed at runtime.
     """
     get_client.cache_clear()
-
-
-def ping() -> bool:
-    """
-    Return True if the cluster is reachable, False otherwise.
-
-    Connection and transport failures are treated as "unreachable" rather
-    than propagated, because the caller is asking a yes/no question. Every
-    other failure mode is still surfaced by the underlying client.
-    """
-    try:
-        return bool(get_client().ping())
-    except Exception as exc:  # noqa: BLE001 - reachability check returns a boolean by contract
-        logger.warning("Elasticsearch ping failed: %s", exc)
-        return False
-
-
-def cluster_info() -> dict:
-    """
-    Return the cluster's ``GET /`` response.
-
-    Unlike :func:`ping`, this propagates failures: callers use it when they
-    need the cluster's identity, and an unreachable cluster should not be
-    silently converted into an empty dict.
-    """
-    return get_client().info()
