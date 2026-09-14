@@ -92,7 +92,7 @@ def load_mapping(version: str) -> dict[str, Any]:
         return json.load(stream)
 
 
-CURRENT_INDEX_VERSION = "v1"
+CURRENT_INDEX_VERSION = "v2"
 INDEX_ALIAS = "products"
 
 

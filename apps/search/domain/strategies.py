@@ -32,6 +32,7 @@ from typing import Protocol, runtime_checkable
 from apps.search.domain.pagination import Pagination
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchResults
+from apps.search.domain.suggest_query import SuggestQuery
 
 
 class SearchIntent(StrEnum):
@@ -116,6 +117,24 @@ class FuzzyQueryComposer(Protocol):
 
     def build(self, text: str) -> dict:
         """Return the complete Elasticsearch fuzzy query for ``text``."""
+        ...
+
+
+@runtime_checkable
+class ProductSuggester(Protocol):
+    """
+    Contract for returning autocomplete suggestions.
+
+    A suggester takes a SuggestQuery (a prefix and a limit) and returns
+    a tuple of suggestion strings. Each string is a complete product
+    name that matches the prefix; the caller presents them to the user.
+
+    Implementations live in the infrastructure layer. The domain does
+    not know which search engine answers.
+    """
+
+    def suggest(self, query: SuggestQuery) -> tuple[str, ...]:
+        """Return suggestions for a SuggestQuery."""
         ...
 
 

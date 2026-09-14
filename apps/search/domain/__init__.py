@@ -23,8 +23,13 @@ from apps.search.domain.search_result import SearchHit, SearchResults
 from apps.search.domain.service_status import ServiceState, ServiceStatus
 from apps.search.domain.strategies import (
     ProductSearchGateway,
+    ProductSuggester,
     SearchExecutionStrategy,
     SearchIntent,
+)
+from apps.search.domain.suggest_query import (
+    InvalidSuggestQueryError,
+    SuggestQuery,
 )
 
 __all__ = [
@@ -32,13 +37,16 @@ __all__ = [
     "DomainError",
     "InvalidPaginationError",
     "InvalidSearchQueryError",
+    "InvalidSuggestQueryError",
     "Pagination",
     "ProductSearchGateway",
+    "ProductSuggester",
     "SearchExecutionStrategy",
     "SearchHit",
     "SearchIntent",
     "SearchQuery",
     "SearchResults",
+    "SuggestQuery",
     "ServiceState",
     "ServiceStatus",
 ]

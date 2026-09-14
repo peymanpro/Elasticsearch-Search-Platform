@@ -1,0 +1,91 @@
+{
+  "dynamic": "strict",
+  "properties": {
+    "id": {
+      "type": "keyword"
+    },
+    "sku": {
+      "type": "keyword"
+    },
+    "name": {
+      "type": "text",
+      "analyzer": "product_text_analyzer",
+      "search_analyzer": "product_text_search_analyzer",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "name_suggest": {
+      "type": "search_as_you_type",
+      "analyzer": "product_text_analyzer",
+      "search_analyzer": "product_text_search_analyzer",
+      "max_shingle_size": 3
+    },
+    "brand": {
+      "type": "text",
+      "analyzer": "product_keyword_analyzer",
+      "search_analyzer": "product_keyword_search_analyzer",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "category": {
+      "type": "text",
+      "analyzer": "product_keyword_analyzer",
+      "search_analyzer": "product_keyword_search_analyzer",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "description": {
+      "type": "text",
+      "analyzer": "product_text_analyzer",
+      "search_analyzer": "product_text_search_analyzer"
+    },
+    "tags": {
+      "type": "text",
+      "analyzer": "product_keyword_analyzer",
+      "search_analyzer": "product_keyword_search_analyzer",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "specifications": {
+      "type": "flattened"
+    },
+    "language": {
+      "type": "keyword"
+    },
+    "price": {
+      "type": "double"
+    },
+    "currency": {
+      "type": "keyword"
+    },
+    "rating": {
+      "type": "double"
+    },
+    "availability": {
+      "type": "keyword"
+    },
+    "created_at": {
+      "type": "date",
+      "format": "strict_date_optional_time"
+    },
+    "popularity": {
+      "type": "long"
+    }
+  }
+}
