@@ -3,16 +3,32 @@
   "number_of_replicas": 0,
   "refresh_interval": "1s",
   "analysis": {
+    "filter": {
+      "product_synonym_filter": {
+        "type": "synonym",
+        "synonyms": []
+      }
+    },
     "analyzer": {
       "product_text_analyzer": {
         "type": "custom",
         "tokenizer": "standard",
         "filter": ["lowercase", "asciifolding", "stop", "porter_stem"]
       },
+      "product_text_search_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding", "product_synonym_filter", "stop", "porter_stem"]
+      },
       "product_keyword_analyzer": {
         "type": "custom",
         "tokenizer": "standard",
         "filter": ["lowercase", "asciifolding"]
+      },
+      "product_keyword_search_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding", "product_synonym_filter"]
       }
     }
   }

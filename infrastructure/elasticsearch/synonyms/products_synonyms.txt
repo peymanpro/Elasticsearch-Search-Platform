@@ -1,0 +1,39 @@
+# Product catalog synonym groups.
+#
+# One rule per line. Each line is an equivalence group: every term in
+# the group is treated as equivalent to every other term during query
+# analysis. Comments begin with #.
+#
+# See docs/16-synonyms.md for the design rationale, the search-time
+# vs. index-time decision, and the rule for changing this list.
+
+# Electronics
+tv,television,telly
+headphones,headphone,earphones,earphone
+speaker,speakers,loudspeaker
+laptop,laptops,notebook,notebooks
+keyboard,keyboards
+mouse,mice
+tablet,tablets
+charger,chargers,adapter,adapters
+cable,cables,cord,cords
+
+# Home and kitchen
+knife,knives
+pan,pans,frying-pan,frying-pans
+pot,pots,cookware
+espresso,espresso-machine,coffee-machine,coffee-maker
+
+# Office
+desk,desks,table,tables
+chair,chairs,seat,seats
+
+# Sports
+shoe,shoes,footwear
+mat,mats,yoga-mat,yoga-mats
+
+# Generic retail terms
+wireless,cordless
+portable,mobile,handheld
+cheap,affordable,budget,inexpensive
+premium,high-end,luxury
