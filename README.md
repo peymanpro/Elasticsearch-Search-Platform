@@ -26,6 +26,9 @@ narrow in scope, with Elasticsearch as the central subject.
 - [Repository rules](#repository-rules)
 - [License](#license)
 
+For a one-page honest summary of what is implemented, tested, and
+deferred, see [`STATUS.md`](STATUS.md).
+
 ---
 ## Architecture
 
@@ -314,6 +317,7 @@ API and schema
 
 - `24-search-api.md`
 - `25-openapi.md`
+- `37-swagger-demo.md`
 
 Testing and benchmarking
 
