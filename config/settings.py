@@ -51,12 +51,14 @@ ALLOWED_HOSTS = _env_list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0
 # Only the components that are genuinely required are enabled:
 #   contenttypes, auth : required transitively by Django REST Framework.
 #   staticfiles        : serves Swagger UI assets added in Phase 1.5.
+#   rest_framework     : the HTTP layer used by every API endpoint.
 # `admin`, `sessions`, and `messages` are intentionally omitted
 # (docs/02-non-goals.md section 2.5).
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
     "django.contrib.staticfiles",
+    "rest_framework",
 ]
 
 
@@ -113,6 +115,33 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# ---------------------------------------------------------------------------
+# Django REST Framework
+# ---------------------------------------------------------------------------
+# Deliberately minimal. Every additional concern (authentication, throttling,
+# pagination, custom exception handling, filtering backends) is added at the
+# phase that introduces it, with a recorded rationale.
+REST_FRAMEWORK = {
+    "DEFAULT_RENDERER_CLASSES": (
+        [
+            "rest_framework.renderers.JSONRenderer",
+            "rest_framework.renderers.BrowsableAPIRenderer",
+        ]
+        if DEBUG
+        else [
+            "rest_framework.renderers.JSONRenderer",
+        ]
+    ),
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+    ],
+    # No authentication classes are configured at this phase. The API is a
+    # demonstration surface, not a production service (docs/02-non-goals.md
+    # section 2.1).
+    "UNAUTHENTICATED_USER": None,
+}
 
 
 # ---------------------------------------------------------------------------

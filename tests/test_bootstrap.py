@@ -1,25 +1,31 @@
 """
 Bootstrap smoke tests.
 
-These verify that the Django project configures and can serve a request.
-They are deliberately minimal — they exist to catch configuration drift,
-not to test search behavior, which does not yet exist.
+These verify that the Django project configures and can serve a request
+through the DRF request/response cycle. They are deliberately minimal —
+they exist to catch configuration drift, not to test search behavior,
+which does not yet exist.
 """
 
 from __future__ import annotations
 
 from django.conf import settings
-from django.test import Client
+from rest_framework.test import APIClient
 
 
 def test_settings_load_with_expected_root_urlconf() -> None:
     assert settings.ROOT_URLCONF == "config.urls"
 
 
-def test_service_root_endpoint_returns_identity() -> None:
-    client = Client()
+def test_drf_is_registered_in_installed_apps() -> None:
+    assert "rest_framework" in settings.INSTALLED_APPS
+
+
+def test_service_root_endpoint_returns_identity_via_drf() -> None:
+    client = APIClient()
     response = client.get("/")
     assert response.status_code == 200
+    assert response["Content-Type"].startswith("application/json")
     payload = response.json()
     assert payload["service"] == "elasticsearch-search-platform"
     assert payload["status"] == "ok"

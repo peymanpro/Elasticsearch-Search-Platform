@@ -3,6 +3,9 @@
 # Each dependency is added at the phase in which it becomes necessary, so
 # that this file documents the runtime surface and its origin.
 
-# Phase 1.2 — Django application framework
+# Phase 1.2 - Django application framework
 Django>=5.2,<5.3
 python-dotenv>=1.0,<2.0
+
+# Phase 1.3 - Django REST Framework
+djangorestframework>=3.16,<4.0
