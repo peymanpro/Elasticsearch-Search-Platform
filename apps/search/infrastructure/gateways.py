@@ -12,15 +12,16 @@ Two entry points, corresponding to the two methods on the domain's
     search(text, pagination)
         Builds a multi_match query from the text and executes it.
         Used by text-preparation strategies (Literal, Normalized).
-        The original text is preserved in the returned SearchResults.
 
     search_query(query, pagination)
         Executes a fully composed query supplied by the caller.
-        Used by the relevance strategy (Phase 9). The caller's query
-        is not text-based; the SearchResults carries a placeholder
-        SearchQuery whose only meaningful field is pagination.
+        Used by the relevance, fuzzy, and other strategies that build
+        their own queries.
 
-Both entry points share response translation through a private helper.
+Every request includes a ``highlight`` block. The gateway does not
+expose a "search without highlights" method: highlighting is cheap for
+the small result pages the platform returns, and having one code path
+keeps the adapter simple. See docs/18-highlighting.md section 5.3.
 """
 
 from __future__ import annotations
@@ -45,10 +46,33 @@ DEFAULT_SEARCH_FIELDS: tuple[str, ...] = (
     "tags",
 )
 
+# Fields highlighted in every response. Same set as the text-searchable
+# fields. Filterable and numeric fields are not highlighted: a filter
+# match produces no fragment, and a number cannot be emphasized usefully.
+HIGHLIGHT_FIELDS: tuple[str, ...] = (
+    "name",
+    "brand",
+    "category",
+    "description",
+    "tags",
+)
+
+# How many fragments to request for the description field. The
+# description is the longest field and the one where a term can appear
+# in several places. Other fields default to a single fragment (which
+# for a short field is the whole field).
+DESCRIPTION_FRAGMENT_COUNT = 3
+
+# Pre- and post-tags wrap the matched terms in each fragment. The
+# platform uses <em> for conservative HTML-shaped output; a caller that
+# renders in a non-HTML context strips or transforms them. Declared
+# explicitly so a future change is one edit in one place.
+PRE_TAG = "<em>"
+POST_TAG = "</em>"
+
 # The SearchResults value object carries a SearchQuery. When a caller
 # supplies a composed query rather than text, there is no text to
-# preserve. This sentinel is used in that case; consumers that care
-# about the text read it only from the text-based path.
+# preserve. This sentinel is used in that case.
 _COMPOSED_QUERY_TEXT = "<composed-query>"
 
 
@@ -115,18 +139,40 @@ class ElasticsearchProductSearchGateway:
         pagination: Pagination,
         original_text: str,
     ) -> SearchResults:
-        """Execute a query and translate the response into SearchResults."""
+        """Execute a query with highlighting and translate the response."""
         response = self._client.search(
             index=self._index,
             query=query,
             from_=pagination.offset,
             size=pagination.page_size,
+            highlight=self._build_highlight_block(),
         )
         return self._to_search_results(
             original_text=original_text,
             pagination=pagination,
             response=response,
         )
+
+    @staticmethod
+    def _build_highlight_block() -> dict[str, Any]:
+        """
+        Return the ``highlight`` block sent with every request.
+
+        Every searchable field is named. The description field requests
+        multiple fragments; the other fields use the default (one
+        fragment, which for a short field is the whole field).
+        """
+        fields: dict[str, dict[str, Any]] = {}
+        for field_name in HIGHLIGHT_FIELDS:
+            if field_name == "description":
+                fields[field_name] = {"number_of_fragments": DESCRIPTION_FRAGMENT_COUNT}
+            else:
+                fields[field_name] = {}
+        return {
+            "fields": fields,
+            "pre_tags": [PRE_TAG],
+            "post_tags": [POST_TAG],
+        }
 
     def _to_search_results(
         self,
@@ -144,7 +190,13 @@ class ElasticsearchProductSearchGateway:
             {
               "hits": {
                 "total": {"value": <int>, "relation": "eq" | "gte"},
-                "hits":  [{"_id": ..., "_score": ..., "_source": {...}}, ...]
+                "hits":  [
+                  {
+                    "_id": ..., "_score": ..., "_source": {...},
+                    "highlight": {"field": ["fragment", ...], ...}
+                  },
+                  ...
+                ]
               }
             }
 
@@ -160,6 +212,7 @@ class ElasticsearchProductSearchGateway:
                 document_id=str(raw["_id"]),
                 score=float(raw.get("_score") or 0.0),
                 source=dict(raw.get("_source") or {}),
+                highlights=_extract_highlights(raw.get("highlight")),
             )
             for raw in hits_container.get("hits", [])
         )
@@ -169,3 +222,22 @@ class ElasticsearchProductSearchGateway:
             total=total,
             hits=hits,
         )
+
+
+def _extract_highlights(raw: Any) -> dict[str, tuple[str, ...]]:
+    """
+    Convert the ``highlight`` field of a raw hit into a mapping.
+
+    The mapping is from field name to a tuple of fragments. Fields
+    absent from the raw highlight are absent from the returned mapping,
+    not present with an empty tuple. A None or non-mapping raw value
+    yields an empty mapping.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    result: dict[str, tuple[str, ...]] = {}
+    for field_name, fragments in raw.items():
+        if not isinstance(fragments, list):
+            continue
+        result[field_name] = tuple(str(f) for f in fragments)
+    return result
