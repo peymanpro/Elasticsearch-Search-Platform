@@ -1,0 +1,32 @@
+{"noise":"headfones","canonical":"headphones","category":"typo","scenario":"S6"}
+{"noise":"headphones","canonical":"headphones","category":"exact","scenario":"S1"}
+{"noise":"hedphones","canonical":"headphones","category":"typo","scenario":"S6"}
+{"noise":"head phones","canonical":"headphones","category":"spacing","scenario":"S6"}
+{"noise":"HEADPHONES","canonical":"headphones","category":"case","scenario":"S1"}
+{"noise":"wireless headphones","canonical":"wireless headphones","category":"exact","scenario":"S1"}
+{"noise":"headphones wireless","canonical":"wireless headphones","category":"reorder","scenario":"S8"}
+{"noise":"noise cancelling","canonical":"noise-cancelling","category":"spacing","scenario":"S3"}
+{"noise":"noisecancelling","canonical":"noise-cancelling","category":"spacing","scenario":"S3"}
+{"noise":"blutooth","canonical":"bluetooth","category":"typo","scenario":"S6"}
+{"noise":"blue tooth","canonical":"bluetooth","category":"spacing","scenario":"S6"}
+{"noise":"4k tv","canonical":"4k ultra hd smart tv","category":"synonym","scenario":"S3"}
+{"noise":"television","canonical":"tv","category":"synonym","scenario":"S4"}
+{"noise":"smart tv","canonical":"4k ultra hd smart tv","category":"synonym","scenario":"S3"}
+{"noise":"samsng","canonical":"samsung","category":"typo","scenario":"S6"}
+{"noise":"keybord","canonical":"keyboard","category":"typo","scenario":"S6"}
+{"noise":"mechanical keybord","canonical":"mechanical keyboard","category":"typo","scenario":"S6"}
+{"noise":"rgb keyboard","canonical":"mechanical keyboard tkl rgb","category":"synonym","scenario":"S3"}
+{"noise":"chef knife","canonical":"stainless steel chef knife","category":"synonym","scenario":"S3"}
+{"noise":"knife chef","canonical":"stainless steel chef knife","category":"reorder","scenario":"S8"}
+{"noise":"espresso maker","canonical":"espresso machine","category":"synonym","scenario":"S3"}
+{"noise":"coffee machine","canonical":"espresso machine","category":"synonym","scenario":"S4"}
+{"noise":"frying pan","canonical":"nonstick frying pan","category":"synonym","scenario":"S3"}
+{"noise":"non stick pan","canonical":"nonstick frying pan","category":"spacing","scenario":"S6"}
+{"noise":"office chair","canonical":"ergonomic office chair","category":"synonym","scenario":"S3"}
+{"noise":"standing desk","canonical":"standing desk electric adjustable","category":"synonym","scenario":"S3"}
+{"noise":"electric desk","canonical":"standing desk electric adjustable","category":"synonym","scenario":"S4"}
+{"noise":"yoga matt","canonical":"yoga mat","category":"typo","scenario":"S6"}
+{"noise":"joga mat","canonical":"yoga mat","category":"typo","scenario":"S6"}
+{"noise":"running shoes","canonical":"running shoes lightweight trail","category":"synonym","scenario":"S3"}
+{"noise":"trail shoes","canonical":"running shoes lightweight trail","category":"synonym","scenario":"S4"}
+{"noise":"data intensive","canonical":"designing data-intensive applications","category":"synonym","scenario":"S3"}
