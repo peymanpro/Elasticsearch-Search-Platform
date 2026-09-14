@@ -350,6 +350,9 @@ The following fields are deliberately excluded from the initial model:
   inventory concern (see docs/02-non-goals.md).
 - **seller / vendor** -- a marketplace feature, not a search feature.
 - **shipping options** -- operational, not search-related.
+- **Multilingual datasets** -- the catalog is English-only. The
+  multilingual-analysis work scoped for Phase 4.3 is not applicable. See
+  Section 3.1.
 
 ## 8. Consumers of This Model
 
