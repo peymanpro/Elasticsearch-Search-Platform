@@ -16,12 +16,22 @@ from apps.search.domain.exceptions import (
     InvalidPaginationError,
     InvalidSearchQueryError,
 )
+from apps.search.domain.facets import (
+    FacetBucket,
+    FacetedSearchResults,
+    FacetResults,
+)
+from apps.search.domain.filters import (
+    InvalidFiltersError,
+    ProductFilters,
+)
 from apps.search.domain.pagination import Pagination
 from apps.search.domain.ports import ClusterHealthProbe
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchHit, SearchResults
 from apps.search.domain.service_status import ServiceState, ServiceStatus
 from apps.search.domain.strategies import (
+    ProductFacetGateway,
     ProductSearchGateway,
     ProductSuggester,
     SearchExecutionStrategy,
@@ -35,10 +45,16 @@ from apps.search.domain.suggest_query import (
 __all__ = [
     "ClusterHealthProbe",
     "DomainError",
+    "FacetBucket",
+    "FacetResults",
+    "FacetedSearchResults",
+    "InvalidFiltersError",
     "InvalidPaginationError",
     "InvalidSearchQueryError",
     "InvalidSuggestQueryError",
     "Pagination",
+    "ProductFilters",
+    "ProductFacetGateway",
     "ProductSearchGateway",
     "ProductSuggester",
     "SearchExecutionStrategy",

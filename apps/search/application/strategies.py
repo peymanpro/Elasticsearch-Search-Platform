@@ -44,7 +44,11 @@ class LiteralSearchStrategy:
         query: SearchQuery,
         gateway: ProductSearchGateway,
     ) -> SearchResults:
-        return gateway.search(text=query.text, pagination=query.pagination)
+        return gateway.search(
+            text=query.text,
+            pagination=query.pagination,
+            filters=query.filters,
+        )
 
 
 class NormalizedSearchStrategy:
@@ -65,6 +69,7 @@ class NormalizedSearchStrategy:
         return gateway.search(
             text=_normalize_text(query.text),
             pagination=query.pagination,
+            filters=query.filters,
         )
 
 
@@ -87,7 +92,7 @@ class RelevantSearchStrategy:
         query: SearchQuery,
         gateway: ProductSearchGateway,
     ) -> SearchResults:
-        composed = self._composer.build(query.text)
+        composed = self._composer.build(query.text, query.filters)
         return gateway.search_query(composed, query.pagination)
 
 
@@ -110,7 +115,7 @@ class FuzzySearchStrategy:
         query: SearchQuery,
         gateway: ProductSearchGateway,
     ) -> SearchResults:
-        composed = self._composer.build(query.text)
+        composed = self._composer.build(query.text, query.filters)
         return gateway.search_query(composed, query.pagination)
 
 

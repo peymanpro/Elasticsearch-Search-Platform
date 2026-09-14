@@ -29,6 +29,8 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
+from apps.search.domain.facets import FacetedSearchResults
+from apps.search.domain.filters import ProductFilters
 from apps.search.domain.pagination import Pagination
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchResults
@@ -68,7 +70,12 @@ class ProductSearchGateway(Protocol):
     Elasticsearch for search operations.
     """
 
-    def search(self, text: str, pagination: Pagination) -> SearchResults:
+    def search(
+        self,
+        text: str,
+        pagination: Pagination,
+        filters: ProductFilters | None = None,
+    ) -> SearchResults:
         """Execute a text search and return the matching products."""
         ...
 
@@ -98,7 +105,7 @@ class RelevanceQueryComposer(Protocol):
     function_score, or any composition the policy requires.
     """
 
-    def build(self, text: str) -> dict:
+    def build(self, text: str, filters: ProductFilters | None = None) -> dict:
         """Return the complete Elasticsearch query for ``text``."""
         ...
 
@@ -115,7 +122,7 @@ class FuzzyQueryComposer(Protocol):
     silently changing the other.
     """
 
-    def build(self, text: str) -> dict:
+    def build(self, text: str, filters: ProductFilters | None = None) -> dict:
         """Return the complete Elasticsearch fuzzy query for ``text``."""
         ...
 
@@ -135,6 +142,28 @@ class ProductSuggester(Protocol):
 
     def suggest(self, query: SuggestQuery) -> tuple[str, ...]:
         """Return suggestions for a SuggestQuery."""
+        ...
+
+
+@runtime_checkable
+class ProductFacetGateway(Protocol):
+    """
+    Contract for executing a search and returning both the page of hits
+    and the facet summaries computed over the same result set.
+
+    Kept separate from ``ProductSearchGateway`` because faceting is a
+    distinct capability: the output shape is different (a page plus
+    facet buckets, not just a page), and a consumer that does not want
+    facets should not have to depend on a method that produces them.
+    See docs/19-filtering-facets.md section 5.4.
+    """
+
+    def search_with_facets(
+        self,
+        query: dict,
+        pagination: Pagination,
+    ) -> FacetedSearchResults:
+        """Execute a query and return hits plus facets."""
         ...
 
 

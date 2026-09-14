@@ -25,7 +25,12 @@ class _RecordingGateway:
         )
         self.raise_on_call: Exception | None = None
 
-    def search(self, text: str, pagination: Pagination) -> SearchResults:
+    def search(
+        self,
+        text: str,
+        pagination: Pagination,
+        filters: object | None = None,
+    ) -> SearchResults:
         if self.raise_on_call is not None:
             raise self.raise_on_call
         self.calls.append((text, pagination))

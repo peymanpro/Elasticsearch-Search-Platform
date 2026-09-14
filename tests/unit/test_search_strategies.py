@@ -37,7 +37,12 @@ class _RecordingGateway:
             hits=(),
         )
 
-    def search(self, text: str, pagination: Pagination) -> SearchResults:
+    def search(
+        self,
+        text: str,
+        pagination: Pagination,
+        filters: object | None = None,
+    ) -> SearchResults:
         self.calls.append((text, pagination))
         return self._result
 

@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from apps.search.domain.filters import ProductFilters
+from apps.search.infrastructure.filter_clauses import build_filter_clauses
 from infrastructure.elasticsearch.query.builder import QueryBuilder
 from infrastructure.elasticsearch.query.clauses import MultiMatchClause
 
@@ -54,20 +56,24 @@ class ElasticsearchFuzzyQueryComposer:
         self._fuzziness = fuzziness
         self._prefix_length = prefix_length
 
-    def build(self, text: str) -> dict[str, Any]:
+    def build(
+        self,
+        text: str,
+        filters: ProductFilters | None = None,
+    ) -> dict[str, Any]:
         """Return the complete Elasticsearch fuzzy query for ``text``."""
-        return (
-            QueryBuilder()
-            .must(
-                MultiMatchClause(
-                    fields=self._fields,
-                    value=text,
-                    fuzziness=self._fuzziness,
-                    prefix_length=self._prefix_length,
-                )
+        builder = QueryBuilder().must(
+            MultiMatchClause(
+                fields=self._fields,
+                value=text,
+                fuzziness=self._fuzziness,
+                prefix_length=self._prefix_length,
             )
-            .build()
         )
+        if filters is not None:
+            for clause in build_filter_clauses(filters):
+                builder = builder.filter_raw(clause)
+        return builder.build()
 
 
 __all__ = [

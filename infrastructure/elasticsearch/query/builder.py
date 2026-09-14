@@ -47,7 +47,7 @@ class QueryBuilder:
 
     def __init__(self) -> None:
         self._must: list[Clause] = []
-        self._filter: list[Clause] = []
+        self._filter: list[Clause | dict] = []
         self._should: list[Clause] = []
         self._must_not: list[Clause] = []
         self._minimum_should_match: int | None = None
@@ -73,6 +73,18 @@ class QueryBuilder:
     def must_not(self, clause: Clause) -> QueryBuilder:
         """Add a clause that must not match."""
         self._must_not.append(clause)
+        return self
+
+    def filter_raw(self, clause: dict) -> QueryBuilder:
+        """
+        Add a pre-built filter clause dictionary.
+
+        Used by composers that construct their filter clauses from a
+        domain value object (see apps.search.infrastructure.filter_clauses)
+        rather than from the Clause class hierarchy. The dictionary is
+        added to the filter slot as-is.
+        """
+        self._filter.append(clause)
         return self
 
     def minimum_should_match(self, value: int) -> QueryBuilder:
@@ -135,7 +147,9 @@ class QueryBuilder:
         if self._must:
             bool_body["must"] = [clause.to_dsl() for clause in self._must]
         if self._filter:
-            bool_body["filter"] = [clause.to_dsl() for clause in self._filter]
+            bool_body["filter"] = [
+                clause.to_dsl() if isinstance(clause, Clause) else clause for clause in self._filter
+            ]
         if self._should:
             bool_body["should"] = [clause.to_dsl() for clause in self._should]
         if self._must_not:
