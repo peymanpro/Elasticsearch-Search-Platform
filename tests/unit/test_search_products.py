@@ -30,6 +30,7 @@ class _RecordingGateway:
         text: str,
         pagination: Pagination,
         filters: object | None = None,
+        sort: object | None = None,
     ) -> SearchResults:
         if self.raise_on_call is not None:
             raise self.raise_on_call

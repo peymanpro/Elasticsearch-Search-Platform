@@ -42,6 +42,7 @@ class _RecordingGateway:
         text: str,
         pagination: Pagination,
         filters: object | None = None,
+        sort: object | None = None,
     ) -> SearchResults:
         self.calls.append((text, pagination))
         return self._result

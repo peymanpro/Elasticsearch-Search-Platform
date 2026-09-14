@@ -9,19 +9,19 @@ The adapter sits between them and translates in both directions.
 Two entry points, corresponding to the two methods on the domain's
 ``ProductSearchGateway`` port:
 
-    search(text, pagination)
+    search(text, pagination, filters, sort)
         Builds a multi_match query from the text and executes it.
-        Used by text-preparation strategies (Literal, Normalized).
 
-    search_query(query, pagination)
+    search_query(query, pagination, sort)
         Executes a fully composed query supplied by the caller.
-        Used by the relevance, fuzzy, and other strategies that build
-        their own queries.
 
-Every request includes a ``highlight`` block. The gateway does not
-expose a "search without highlights" method: highlighting is cheap for
-the small result pages the platform returns, and having one code path
-keeps the adapter simple. See docs/18-highlighting.md section 5.3.
+Every request includes a ``highlight`` block and an explicit ``sort``
+clause. The sort clause always ends with a tie-breaker on
+``sku.keyword`` so that pagination is deterministic across ties. When
+the caller supplies a cursor-based Pagination, the gateway sends
+``search_after`` instead of ``from_`` and populates the response's
+``next_cursor`` from the sort values of the last hit. See
+docs/18-highlighting.md and docs/20-sorting-pagination.md.
 """
 
 from __future__ import annotations
@@ -37,14 +37,13 @@ from apps.search.domain.filters import ProductFilters
 from apps.search.domain.pagination import Pagination
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchHit, SearchResults
+from apps.search.domain.sorting import DEFAULT_SORT_ORDER, SortOrder
 from apps.search.infrastructure.filter_clauses import build_filter_clauses
+from apps.search.infrastructure.sort_clauses import build_sort_clauses
 from elasticsearch import Elasticsearch
 from infrastructure.elasticsearch.query.builder import QueryBuilder
 from infrastructure.elasticsearch.query.clauses import MultiMatchClause
 
-# Fields searched by the default text-based search. Phase 9's relevance
-# strategy uses its own boosted field list; this constant applies only
-# to the search() method.
 DEFAULT_SEARCH_FIELDS: tuple[str, ...] = (
     "name",
     "brand",
@@ -53,9 +52,6 @@ DEFAULT_SEARCH_FIELDS: tuple[str, ...] = (
     "tags",
 )
 
-# Fields highlighted in every response. Same set as the text-searchable
-# fields. Filterable and numeric fields are not highlighted: a filter
-# match produces no fragment, and a number cannot be emphasized usefully.
 HIGHLIGHT_FIELDS: tuple[str, ...] = (
     "name",
     "brand",
@@ -64,22 +60,11 @@ HIGHLIGHT_FIELDS: tuple[str, ...] = (
     "tags",
 )
 
-# How many fragments to request for the description field. The
-# description is the longest field and the one where a term can appear
-# in several places. Other fields default to a single fragment (which
-# for a short field is the whole field).
 DESCRIPTION_FRAGMENT_COUNT = 3
 
-# Pre- and post-tags wrap the matched terms in each fragment. The
-# platform uses <em> for conservative HTML-shaped output; a caller that
-# renders in a non-HTML context strips or transforms them. Declared
-# explicitly so a future change is one edit in one place.
 PRE_TAG = "<em>"
 POST_TAG = "</em>"
 
-# The SearchResults value object carries a SearchQuery. When a caller
-# supplies a composed query rather than text, there is no text to
-# preserve. This sentinel is used in that case.
 _COMPOSED_QUERY_TEXT = "<composed-query>"
 
 
@@ -89,10 +74,7 @@ class ElasticsearchProductSearchGateway:
     Elasticsearch client's ``search`` API.
 
     Args:
-        client: An Elasticsearch client. Injecting the client (rather
-            than calling ``get_client()`` internally) keeps the adapter
-            unit-testable without any running cluster and keeps the
-            "which client" decision in the composition root.
+        client: An Elasticsearch client.
         index: The index or alias to search.
         search_fields: The document fields matched by the text-based
             ``search`` method. Ignored by ``search_query``.
@@ -113,10 +95,11 @@ class ElasticsearchProductSearchGateway:
         text: str,
         pagination: Pagination,
         filters: ProductFilters | None = None,
+        sort: SortOrder | None = None,
     ) -> SearchResults:
         """
         Search the catalog for ``text`` using a multi_match query,
-        optionally narrowed by filters.
+        optionally narrowed by filters and ordered by ``sort``.
 
         The original text is preserved in the returned SearchResults.
         """
@@ -128,9 +111,15 @@ class ElasticsearchProductSearchGateway:
             query=builder.build(),
             pagination=pagination,
             original_text=text,
+            sort=sort,
         )
 
-    def search_query(self, query: dict[str, Any], pagination: Pagination) -> SearchResults:
+    def search_query(
+        self,
+        query: dict[str, Any],
+        pagination: Pagination,
+        sort: SortOrder | None = None,
+    ) -> SearchResults:
         """
         Execute a fully composed query.
 
@@ -145,6 +134,7 @@ class ElasticsearchProductSearchGateway:
             query=query,
             pagination=pagination,
             original_text=_COMPOSED_QUERY_TEXT,
+            sort=sort,
         )
 
     # --------------------------------------------------------------
@@ -156,15 +146,27 @@ class ElasticsearchProductSearchGateway:
         query: dict[str, Any],
         pagination: Pagination,
         original_text: str,
+        sort: SortOrder | None,
     ) -> SearchResults:
-        """Execute a query with highlighting and translate the response."""
-        response = self._client.search(
-            index=self._index,
-            query=query,
-            from_=pagination.offset,
-            size=pagination.page_size,
-            highlight=self._build_highlight_block(),
-        )
+        """
+        Execute a query with highlighting and a stable sort, then
+        translate the response.
+        """
+        resolved_sort = sort or DEFAULT_SORT_ORDER
+
+        request: dict[str, Any] = {
+            "index": self._index,
+            "query": query,
+            "size": pagination.page_size,
+            "sort": build_sort_clauses(resolved_sort),
+            "highlight": self._build_highlight_block(),
+        }
+        if pagination.is_cursor_based:
+            request["search_after"] = list(pagination.cursor or ())
+        else:
+            request["from_"] = pagination.offset
+
+        response = self._client.search(**request)
         return self._to_search_results(
             original_text=original_text,
             pagination=pagination,
@@ -203,27 +205,13 @@ class ElasticsearchProductSearchGateway:
         Translate an Elasticsearch search response into SearchResults.
 
         The response structure this method relies on is the
-        Elasticsearch 8.x form:
-
-            {
-              "hits": {
-                "total": {"value": <int>, "relation": "eq" | "gte"},
-                "hits":  [
-                  {
-                    "_id": ..., "_score": ..., "_source": {...},
-                    "highlight": {"field": ["fragment", ...], ...}
-                  },
-                  ...
-                ]
-              }
-            }
-
-        A malformed response raises KeyError, which is intentional: it
-        means the client contract has been broken, and the adapter
-        should not silently paper over it.
+        Elasticsearch 8.x form. Each hit may carry a ``sort`` array
+        whose values match the request's sort clause; that array is
+        what becomes the next_cursor.
         """
         hits_container = response["hits"]
         total = int(hits_container["total"]["value"])
+        raw_hits = hits_container.get("hits", [])
 
         hits: tuple[SearchHit, ...] = tuple(
             SearchHit(
@@ -232,14 +220,47 @@ class ElasticsearchProductSearchGateway:
                 source=dict(raw.get("_source") or {}),
                 highlights=_extract_highlights(raw.get("highlight")),
             )
-            for raw in hits_container.get("hits", [])
+            for raw in raw_hits
+        )
+
+        next_cursor = _extract_next_cursor(
+            raw_hits=raw_hits,
+            returned=len(hits),
+            page_size=pagination.page_size,
         )
 
         return SearchResults(
             query=SearchQuery.create(original_text, pagination=pagination),
             total=total,
             hits=hits,
+            next_cursor=next_cursor,
         )
+
+
+def _extract_next_cursor(
+    *,
+    raw_hits: list[dict[str, Any]],
+    returned: int,
+    page_size: int,
+) -> tuple[Any, ...] | None:
+    """
+    Return the sort values of the last hit on the page, or None.
+
+    None is returned when:
+
+    * The page is empty (there is nothing to continue from).
+    * Fewer hits were returned than requested (the end of the result
+      set has been reached).
+    * The last hit has no ``sort`` array (should not happen when a
+      sort clause was sent, but the check keeps the contract honest).
+    """
+    if not raw_hits or returned < page_size:
+        return None
+    last = raw_hits[-1]
+    sort_values = last.get("sort")
+    if not isinstance(sort_values, list) or not sort_values:
+        return None
+    return tuple(sort_values)
 
 
 def _extract_highlights(raw: Any) -> dict[str, tuple[str, ...]]:
@@ -247,9 +268,8 @@ def _extract_highlights(raw: Any) -> dict[str, tuple[str, ...]]:
     Convert the ``highlight`` field of a raw hit into a mapping.
 
     The mapping is from field name to a tuple of fragments. Fields
-    absent from the raw highlight are absent from the returned mapping,
-    not present with an empty tuple. A None or non-mapping raw value
-    yields an empty mapping.
+    absent from the raw highlight are absent from the returned mapping.
+    A None or non-mapping raw value yields an empty mapping.
     """
     if not isinstance(raw, dict):
         return {}
@@ -264,9 +284,6 @@ def _extract_highlights(raw: Any) -> dict[str, tuple[str, ...]]:
 # ---------------------------------------------------------------------------
 # Facet policy
 # ---------------------------------------------------------------------------
-# Each facet is a named aggregation over a specific field. Constants here
-# rather than inline, so tests can assert against them and readers can
-# see the policy without reading the builder.
 FACET_CATEGORIES_KEY = "categories"
 FACET_BRANDS_KEY = "brands"
 FACET_AVAILABILITY_KEY = "availability"
@@ -279,9 +296,6 @@ FACET_PRICE_FIELD = "price"
 
 FACET_TERMS_SIZE = 20
 
-# Price bands for the range facet. Bands, not distinct values: a
-# continuous field cannot be faceted usefully by value. Labels are
-# declared so the response carries human-readable keys.
 PRICE_RANGES: tuple[dict, ...] = (
     {"key": "0-50", "to": 50.0},
     {"key": "50-100", "from": 50.0, "to": 100.0},
@@ -300,7 +314,6 @@ class ElasticsearchFacetGateway:
     but issues a distinct request that includes an ``aggs`` block. The
     aggregations run over the same filtered result set as the query, so
     the facet counts and the returned hits describe the same documents.
-    See docs/19-filtering-facets.md section 5.
     """
 
     def __init__(
@@ -315,15 +328,25 @@ class ElasticsearchFacetGateway:
         self,
         query: dict[str, Any],
         pagination: Pagination,
+        sort: SortOrder | None = None,
     ) -> FacetedSearchResults:
         """Execute a query and return both a page and the facet summary."""
-        response = self._client.search(
-            index=self._index,
-            query=query,
-            from_=pagination.offset,
-            size=pagination.page_size,
-            aggs=self._build_facets_block(),
-        )
+        resolved_sort = sort or DEFAULT_SORT_ORDER
+
+        request: dict[str, Any] = {
+            "index": self._index,
+            "query": query,
+            "size": pagination.page_size,
+            "sort": build_sort_clauses(resolved_sort),
+            "aggs": self._build_facets_block(),
+            "highlight": _default_highlight_block(),
+        }
+        if pagination.is_cursor_based:
+            request["search_after"] = list(pagination.cursor or ())
+        else:
+            request["from_"] = pagination.offset
+
+        response = self._client.search(**request)
         search = self._to_search_results(pagination=pagination, response=response)
         facets = _parse_facets(response.get("aggregations") or {})
         return FacetedSearchResults(search=search, facets=facets)
@@ -353,6 +376,7 @@ class ElasticsearchFacetGateway:
         """Translate the hits portion of a faceted response."""
         hits_container = response["hits"]
         total = int(hits_container["total"]["value"])
+        raw_hits = hits_container.get("hits", [])
         hits: tuple[SearchHit, ...] = tuple(
             SearchHit(
                 document_id=str(raw["_id"]),
@@ -360,23 +384,28 @@ class ElasticsearchFacetGateway:
                 source=dict(raw.get("_source") or {}),
                 highlights=_extract_highlights(raw.get("highlight")),
             )
-            for raw in hits_container.get("hits", [])
+            for raw in raw_hits
+        )
+        next_cursor = _extract_next_cursor(
+            raw_hits=raw_hits,
+            returned=len(hits),
+            page_size=pagination.page_size,
         )
         return SearchResults(
             query=SearchQuery.create(_COMPOSED_QUERY_TEXT, pagination=pagination),
             total=total,
             hits=hits,
+            next_cursor=next_cursor,
         )
 
 
-def _parse_facets(aggregations: dict[str, Any]) -> FacetResults:
-    """
-    Convert the ``aggregations`` portion of a response into FacetResults.
+def _default_highlight_block() -> dict[str, Any]:
+    """Return the shared highlight block used by both gateways."""
+    return ElasticsearchProductSearchGateway._build_highlight_block()
 
-    A missing aggregation becomes an empty tuple of buckets. The order
-    of buckets within each facet is the order Elasticsearch returned
-    them, which for terms aggregations is by count descending.
-    """
+
+def _parse_facets(aggregations: dict[str, Any]) -> FacetResults:
+    """Convert the ``aggregations`` portion of a response into FacetResults."""
     return FacetResults(
         categories=_parse_terms_buckets(aggregations.get(FACET_CATEGORIES_KEY)),
         brands=_parse_terms_buckets(aggregations.get(FACET_BRANDS_KEY)),
@@ -400,13 +429,7 @@ def _parse_terms_buckets(raw: Any) -> tuple[FacetBucket, ...]:
 
 
 def _parse_range_buckets(raw: Any) -> tuple[FacetBucket, ...]:
-    """
-    Return a tuple of FacetBucket from a range aggregation response.
-
-    Range buckets carry the declared ``key`` when one was set in the
-    request; when it is missing the numeric ``from``/``to`` are used to
-    build a label.
-    """
+    """Return a tuple of FacetBucket from a range aggregation response."""
     if not isinstance(raw, dict):
         return ()
     buckets = raw.get("buckets")

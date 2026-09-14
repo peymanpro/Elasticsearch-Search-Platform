@@ -34,6 +34,7 @@ from apps.search.domain.filters import ProductFilters
 from apps.search.domain.pagination import Pagination
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchResults
+from apps.search.domain.sorting import SortOrder
 from apps.search.domain.suggest_query import SuggestQuery
 
 
@@ -75,11 +76,17 @@ class ProductSearchGateway(Protocol):
         text: str,
         pagination: Pagination,
         filters: ProductFilters | None = None,
+        sort: SortOrder | None = None,
     ) -> SearchResults:
         """Execute a text search and return the matching products."""
         ...
 
-    def search_query(self, query: dict, pagination: Pagination) -> SearchResults:
+    def search_query(
+        self,
+        query: dict,
+        pagination: Pagination,
+        sort: SortOrder | None = None,
+    ) -> SearchResults:
         """
         Execute a pre-built query and return the matching products.
 
@@ -162,6 +169,7 @@ class ProductFacetGateway(Protocol):
         self,
         query: dict,
         pagination: Pagination,
+        sort: SortOrder | None = None,
     ) -> FacetedSearchResults:
         """Execute a query and return hits plus facets."""
         ...

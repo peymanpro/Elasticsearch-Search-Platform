@@ -30,6 +30,12 @@ from apps.search.domain.ports import ClusterHealthProbe
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchHit, SearchResults
 from apps.search.domain.service_status import ServiceState, ServiceStatus
+from apps.search.domain.sorting import (
+    DEFAULT_SORT_ORDER,
+    SortDirection,
+    SortField,
+    SortOrder,
+)
 from apps.search.domain.strategies import (
     ProductFacetGateway,
     ProductSearchGateway,
@@ -44,6 +50,7 @@ from apps.search.domain.suggest_query import (
 
 __all__ = [
     "ClusterHealthProbe",
+    "DEFAULT_SORT_ORDER",
     "DomainError",
     "FacetBucket",
     "FacetResults",
@@ -62,6 +69,9 @@ __all__ = [
     "SearchIntent",
     "SearchQuery",
     "SearchResults",
+    "SortDirection",
+    "SortField",
+    "SortOrder",
     "SuggestQuery",
     "ServiceState",
     "ServiceStatus",

@@ -41,7 +41,11 @@ class SearchWithFacetsUseCase:
         the same result set.
         """
         composed = self._composer.build(query.text, query.filters)
-        return self._gateway.search_with_facets(composed, query.pagination)
+        return self._gateway.search_with_facets(
+            composed,
+            query.pagination,
+            sort=query.sort,
+        )
 
 
 __all__ = ["SearchWithFacetsUseCase"]
