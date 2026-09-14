@@ -121,13 +121,28 @@ class MultiMatchClause(Clause):
     any of the fields. This is the least surprising default for a
     general catalog and matches what most users expect from a search
     box.
+
+    Fuzziness is optional. When ``fuzziness`` is None, the clause
+    produces an exact-analyzed multi_match (the Phase 8 behavior).
+    When ``fuzziness`` is set (typically to "AUTO"), the clause
+    tolerates edits between the query terms and the indexed terms.
+    The ``prefix_length`` parameter, when set, protects the leading
+    characters of each term from the fuzzy edit distance. See
+    docs/15-fuzzy-search.md for the policy.
     """
 
     fields: tuple[str, ...]
     value: str
+    fuzziness: str | None = None
+    prefix_length: int | None = None
 
     def to_dsl(self) -> dict[str, Any]:
-        return {"multi_match": {"query": self.value, "fields": list(self.fields)}}
+        body: dict[str, Any] = {"query": self.value, "fields": list(self.fields)}
+        if self.fuzziness is not None:
+            body["fuzziness"] = self.fuzziness
+        if self.prefix_length is not None:
+            body["prefix_length"] = self.prefix_length
+        return {"multi_match": body}
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,32 +1,22 @@
 """
 Concrete search execution strategies.
 
-Three strategies are provided as of Phase 9:
+Four strategies exist as of Phase 10:
 
-    LiteralSearchStrategy
-        Passes the user's query text to the gateway verbatim. Correct when
-        the user's text is meaningful as-is: brand names, model numbers,
-        SKUs, quoted phrases.
+    LiteralSearchStrategy       -- text passed verbatim
+    NormalizedSearchStrategy    -- text lowercased and whitespace-collapsed
+    RelevantSearchStrategy      -- relevance-weighted query, composed by a
+                                   RelevanceQueryComposer
+    FuzzySearchStrategy         -- typo-tolerant query, composed by a
+                                   FuzzyQueryComposer
 
-    NormalizedSearchStrategy
-        Lowercases and collapses internal whitespace before handing the
-        text to the gateway. Correct for free-text exploration where
-        casing and extra spaces should not affect matching.
+Later phases add further strategies in this module (Phase 11 synonym,
+Phase 12 autocomplete). Adding a strategy does not require modifying the
+use case, the selector, the domain contracts, or any existing strategy.
 
-    RelevantSearchStrategy
-        Composes a relevance query (multi_match with boosts, exact-phrase
-        should clause, business-signal function_score) and hands it to the
-        gateway's query-based method. Correct for general search-box
-        behavior.
-
-Later phases add further strategies in this module (Phase 10 fuzzy,
-Phase 11 synonym, Phase 12 autocomplete). Adding a strategy does not
-require modifying the use case, the selector, the domain contracts, or
-any existing strategy.
-
-The relevance strategy depends on the domain Protocol
-``RelevanceQueryComposer``, not on the concrete infrastructure class that
-implements it. The composition root wires the concrete implementation.
+The relevance and fuzzy strategies depend on domain Protocols, not on
+concrete composers. The composition root wires the concrete
+implementations.
 """
 
 from __future__ import annotations
@@ -34,6 +24,7 @@ from __future__ import annotations
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchResults
 from apps.search.domain.strategies import (
+    FuzzyQueryComposer,
     ProductSearchGateway,
     RelevanceQueryComposer,
 )
@@ -43,9 +34,7 @@ class LiteralSearchStrategy:
     """
     Pass the query text to the gateway without transformation.
 
-    The user's own casing and internal whitespace are preserved. This is
-    the default strategy and the safest default for a search platform:
-    it never surprises the caller by silently changing what was asked for.
+    The user's own casing and internal whitespace are preserved.
     """
 
     name = "literal"
@@ -63,14 +52,7 @@ class NormalizedSearchStrategy:
     Normalize the query text before passing it to the gateway.
 
     Normalization here is deliberately conservative: lowercase, split on
-    any run of whitespace, join with single spaces. It does not stem,
-    lemmatize, remove accents, or otherwise alter tokens -- those concerns
-    belong to Elasticsearch analyzers (Phase 7), not to the platform's
-    application layer.
-
-    The point of the strategy is to guarantee that the *shape* of the
-    text reaching the gateway is stable, regardless of how the user typed
-    it.
+    any run of whitespace, join with single spaces.
     """
 
     name = "normalized"
@@ -90,19 +72,37 @@ class RelevantSearchStrategy:
     """
     Execute a search using the platform's relevance policy.
 
-    Unlike the text-preparation strategies, this strategy does not
-    decide how the *text* is prepared. It asks a ``RelevanceQueryComposer``
-    to compose a full Elasticsearch query and hands it to the gateway's
-    ``search_query`` method.
-
-    All the policy lives behind the ``RelevanceQueryComposer`` Protocol.
-    This strategy is only the mechanism that selects that policy; it
-    holds no policy itself.
+    The strategy asks a ``RelevanceQueryComposer`` to compose a full
+    Elasticsearch query and hands it to the gateway's ``search_query``
+    method. All the policy lives behind the composer.
     """
 
     name = "relevant"
 
     def __init__(self, composer: RelevanceQueryComposer) -> None:
+        self._composer = composer
+
+    def execute(
+        self,
+        query: SearchQuery,
+        gateway: ProductSearchGateway,
+    ) -> SearchResults:
+        composed = self._composer.build(query.text)
+        return gateway.search_query(composed, query.pagination)
+
+
+class FuzzySearchStrategy:
+    """
+    Execute a fuzzy search that tolerates per-token typing errors.
+
+    The strategy asks a ``FuzzyQueryComposer`` to compose a fuzzy
+    multi_match query and hands it to the gateway's ``search_query``
+    method. See docs/15-fuzzy-search.md.
+    """
+
+    name = "fuzzy"
+
+    def __init__(self, composer: FuzzyQueryComposer) -> None:
         self._composer = composer
 
     def execute(
@@ -120,6 +120,7 @@ def _normalize_text(text: str) -> str:
 
 
 __all__ = [
+    "FuzzySearchStrategy",
     "LiteralSearchStrategy",
     "NormalizedSearchStrategy",
     "RelevantSearchStrategy",

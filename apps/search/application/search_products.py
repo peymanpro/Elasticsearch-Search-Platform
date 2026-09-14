@@ -20,6 +20,7 @@ from apps.search.application.strategy_selector import select_strategy
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchResults
 from apps.search.domain.strategies import (
+    FuzzyQueryComposer,
     ProductSearchGateway,
     RelevanceQueryComposer,
     SearchIntent,
@@ -34,9 +35,11 @@ class SearchProductsUseCase:
         gateway: ProductSearchGateway,
         *,
         relevance_composer: RelevanceQueryComposer | None = None,
+        fuzzy_composer: FuzzyQueryComposer | None = None,
     ) -> None:
         self._gateway = gateway
         self._relevance_composer = relevance_composer
+        self._fuzzy_composer = fuzzy_composer
 
     def execute(
         self,
@@ -54,6 +57,7 @@ class SearchProductsUseCase:
         strategy = select_strategy(
             intent,
             relevance_composer=self._relevance_composer,
+            fuzzy_composer=self._fuzzy_composer,
         )
         return strategy.execute(query, self._gateway)
 

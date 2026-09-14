@@ -45,6 +45,7 @@ class SearchIntent(StrEnum):
     LITERAL = "literal"
     NORMALIZED = "normalized"
     RELEVANT = "relevant"
+    FUZZY = "fuzzy"
 
 
 @runtime_checkable
@@ -98,6 +99,23 @@ class RelevanceQueryComposer(Protocol):
 
     def build(self, text: str) -> dict:
         """Return the complete Elasticsearch query for ``text``."""
+        ...
+
+
+@runtime_checkable
+class FuzzyQueryComposer(Protocol):
+    """
+    Contract for composing a fuzzy search query from a text.
+
+    Distinct from ``RelevanceQueryComposer`` even though the shape is
+    identical: the two produce different queries for different purposes
+    (fuzzy tolerance vs. relevance weighting). Keeping them separate
+    documents the intent and allows either to diverge later without
+    silently changing the other.
+    """
+
+    def build(self, text: str) -> dict:
+        """Return the complete Elasticsearch fuzzy query for ``text``."""
         ...
 
 
