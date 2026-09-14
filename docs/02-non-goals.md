@@ -231,3 +231,15 @@ are true:
    trade-offs.
 
 Absent all three, the exclusion stands.
+
+
+## Appendix A — Designated Choice if the Message-Broker Exclusion Is Lifted
+
+The project currently excludes message brokers entirely (Section 3.2). If a
+concrete requirement later justifies introducing one, the designated broker
+is **RabbitMQ**.
+
+This appendix exists so that, should the exclusion ever be revisited under
+the rule in Section 7, the choice of broker is already recorded and does not
+need to be re-debated from scratch. The exclusion remains in force until
+Section 7's three conditions are met.
