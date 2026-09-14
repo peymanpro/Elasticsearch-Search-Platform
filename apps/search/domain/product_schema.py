@@ -53,10 +53,9 @@ class ProductField(StrEnum):
 
 
 class ProductLanguage(StrEnum):
-    """Languages in which a product document may be written."""
+    """Language of the product text. English-only in the demonstration dataset."""
 
     ENGLISH = "en"
-    PERSIAN = "fa"
 
 
 class Availability(StrEnum):
@@ -78,12 +77,13 @@ class Currency(StrEnum):
     """
     Currency of a product price.
 
-    The demonstration dataset uses USD and IRR; the enum is closed so
+    The demonstration dataset uses USD; the enum is closed so
     that typos cannot slip into the dataset unnoticed.
     """
 
     USD = "USD"
-    IRR = "IRR"
+    EUR = "EUR"
+    GBP = "GBP"
 
 
 # ---------------------------------------------------------------------------

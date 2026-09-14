@@ -58,8 +58,11 @@ def test_expected_core_fields_are_present() -> None:
     assert actual == expected
 
 
-def test_product_language_covers_english_and_persian() -> None:
-    assert {lang.value for lang in ProductLanguage} == {"en", "fa"}
+def test_product_language_is_english_only() -> None:
+    # The demonstration dataset is English-only. The enum remains as a
+    # place to add further languages if the catalog ever becomes
+    # multilingual, but today it contains exactly one member.
+    assert {lang.value for lang in ProductLanguage} == {"en"}
 
 
 def test_availability_is_a_closed_set() -> None:
