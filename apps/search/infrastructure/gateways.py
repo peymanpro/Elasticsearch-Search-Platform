@@ -4,29 +4,23 @@ Concrete adapters that satisfy domain gateway ports.
 The Adapter Pattern is applied here to the search gateway. Elasticsearch
 exposes a low-level ``search(index=..., query=..., from_=..., size=...)``
 API whose request shape and response shape are not what the domain wants.
-The adapter sits between them and translates in both directions:
+The adapter sits between them and translates in both directions.
 
-    domain call                        Elasticsearch call
-    ---------------------------------  ----------------------------------
-    SearchQuery                        index + query DSL + from + size
-    (opaque, no ES knowledge)          (bool query via QueryBuilder)
+Two entry points, corresponding to the two methods on the domain's
+``ProductSearchGateway`` port:
 
-    Elasticsearch response             domain result
-    ---------------------------------  ----------------------------------
-    hits.hits[i]._id / _score / _source  SearchHit(document_id, score, source)
-    hits.total.value                    SearchResults.total
+    search(text, pagination)
+        Builds a multi_match query from the text and executes it.
+        Used by text-preparation strategies (Literal, Normalized).
+        The original text is preserved in the returned SearchResults.
 
-The adapter knows about Elasticsearch. Nothing downstream of it does.
-The use case ``SearchProductsUseCase`` calls ``gateway.search(text,
-pagination)`` and receives ``SearchResults``; it never sees an Elasticsearch
-response structure.
+    search_query(query, pagination)
+        Executes a fully composed query supplied by the caller.
+        Used by the relevance strategy (Phase 9). The caller's query
+        is not text-based; the SearchResults carries a placeholder
+        SearchQuery whose only meaningful field is pagination.
 
-The adapter is deliberately narrow at Phase 3.7. It queries a single
-field for the ``must`` clause and does not yet do relevance engineering,
-fuzzy matching, synonyms, filters, facets, or highlighting. Those are
-separate phases with their own design records. What is demonstrated here
-is the *adapter shape*: domain contract in, domain result out, with the
-query builder (Phase 3.6) and the managed client (Phase 1.4) in between.
+Both entry points share response translation through a private helper.
 """
 
 from __future__ import annotations
@@ -40,9 +34,9 @@ from elasticsearch import Elasticsearch
 from infrastructure.elasticsearch.query.builder import QueryBuilder
 from infrastructure.elasticsearch.query.clauses import MultiMatchClause
 
-# Fields searched by the multi_match clause. Phase 9 will adjust these
-# with per-field boosts (name^3 etc.). For Phase 8 they are the five
-# text-searchable fields from product_schema.py, unweighted.
+# Fields searched by the default text-based search. Phase 9's relevance
+# strategy uses its own boosted field list; this constant applies only
+# to the search() method.
 DEFAULT_SEARCH_FIELDS: tuple[str, ...] = (
     "name",
     "brand",
@@ -50,6 +44,12 @@ DEFAULT_SEARCH_FIELDS: tuple[str, ...] = (
     "description",
     "tags",
 )
+
+# The SearchResults value object carries a SearchQuery. When a caller
+# supplies a composed query rather than text, there is no text to
+# preserve. This sentinel is used in that case; consumers that care
+# about the text read it only from the text-based path.
+_COMPOSED_QUERY_TEXT = "<composed-query>"
 
 
 class ElasticsearchProductSearchGateway:
@@ -62,11 +62,9 @@ class ElasticsearchProductSearchGateway:
             than calling ``get_client()`` internally) keeps the adapter
             unit-testable without any running cluster and keeps the
             "which client" decision in the composition root.
-        index: The index or alias to search. At Phase 3.7 this is a
-            plain string; Phase 18 will introduce an alias that points
-            at a versioned physical index.
-        search_fields: The document fields matched by the text query.
-            Defaults to the five text-searchable product fields.
+        index: The index or alias to search.
+        search_fields: The document fields matched by the text-based
+            ``search`` method. Ignored by ``search_query``.
     """
 
     def __init__(
@@ -81,40 +79,67 @@ class ElasticsearchProductSearchGateway:
 
     def search(self, text: str, pagination: Pagination) -> SearchResults:
         """
-        Search the catalog for ``text`` and return the matching products.
+        Search the catalog for ``text`` using a multi_match query.
 
-        The adapter builds a ``bool`` query with a single ``must``
-        clause containing a ``multi_match`` over ``search_fields``,
-        delegates to the client, and translates the response into
-        domain value objects.
+        The original text is preserved in the returned SearchResults.
         """
         query = (
             QueryBuilder().must(MultiMatchClause(fields=self._search_fields, value=text)).build()
         )
+        return self._execute(query=query, pagination=pagination, original_text=text)
 
+    def search_query(self, query: dict[str, Any], pagination: Pagination) -> SearchResults:
+        """
+        Execute a fully composed query.
+
+        The gateway forwards ``query`` to Elasticsearch without
+        modification. It is the caller's responsibility to ensure the
+        query is well-formed; the gateway does not validate DSL.
+
+        The returned SearchResults carries a placeholder SearchQuery
+        text, because the caller's input was a DSL dict, not text.
+        """
+        return self._execute(
+            query=query,
+            pagination=pagination,
+            original_text=_COMPOSED_QUERY_TEXT,
+        )
+
+    # --------------------------------------------------------------
+    # Shared implementation
+    # --------------------------------------------------------------
+    def _execute(
+        self,
+        *,
+        query: dict[str, Any],
+        pagination: Pagination,
+        original_text: str,
+    ) -> SearchResults:
+        """Execute a query and translate the response into SearchResults."""
         response = self._client.search(
             index=self._index,
             query=query,
             from_=pagination.offset,
             size=pagination.page_size,
         )
+        return self._to_search_results(
+            original_text=original_text,
+            pagination=pagination,
+            response=response,
+        )
 
-        return self._to_search_results(text=text, pagination=pagination, response=response)
-
-    # --------------------------------------------------------------
-    # Response translation
-    # --------------------------------------------------------------
     def _to_search_results(
         self,
-        text: str,
+        *,
+        original_text: str,
         pagination: Pagination,
         response: dict[str, Any],
     ) -> SearchResults:
         """
         Translate an Elasticsearch search response into SearchResults.
 
-        The response structure this method relies on is the Elasticsearch
-        8.x form:
+        The response structure this method relies on is the
+        Elasticsearch 8.x form:
 
             {
               "hits": {
@@ -140,7 +165,7 @@ class ElasticsearchProductSearchGateway:
         )
 
         return SearchResults(
-            query=SearchQuery.create(text, pagination=pagination),
+            query=SearchQuery.create(original_text, pagination=pagination),
             total=total,
             hits=hits,
         )

@@ -1,7 +1,7 @@
 """
 Concrete search execution strategies.
 
-Two strategies are provided at Phase 3.5:
+Three strategies are provided as of Phase 9:
 
     LiteralSearchStrategy
         Passes the user's query text to the gateway verbatim. Correct when
@@ -13,17 +13,30 @@ Two strategies are provided at Phase 3.5:
         text to the gateway. Correct for free-text exploration where
         casing and extra spaces should not affect matching.
 
-Later phases add further strategies in this module (Phase 9 relevance
-strategies, Phase 10 fuzzy, Phase 11 synonym, Phase 12 autocomplete).
-Adding a strategy does not require modifying the use case, the selector,
-the domain contracts, or any existing strategy.
+    RelevantSearchStrategy
+        Composes a relevance query (multi_match with boosts, exact-phrase
+        should clause, business-signal function_score) and hands it to the
+        gateway's query-based method. Correct for general search-box
+        behavior.
+
+Later phases add further strategies in this module (Phase 10 fuzzy,
+Phase 11 synonym, Phase 12 autocomplete). Adding a strategy does not
+require modifying the use case, the selector, the domain contracts, or
+any existing strategy.
+
+The relevance strategy depends on the domain Protocol
+``RelevanceQueryComposer``, not on the concrete infrastructure class that
+implements it. The composition root wires the concrete implementation.
 """
 
 from __future__ import annotations
 
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchResults
-from apps.search.domain.strategies import ProductSearchGateway
+from apps.search.domain.strategies import (
+    ProductSearchGateway,
+    RelevanceQueryComposer,
+)
 
 
 class LiteralSearchStrategy:
@@ -73,6 +86,34 @@ class NormalizedSearchStrategy:
         )
 
 
+class RelevantSearchStrategy:
+    """
+    Execute a search using the platform's relevance policy.
+
+    Unlike the text-preparation strategies, this strategy does not
+    decide how the *text* is prepared. It asks a ``RelevanceQueryComposer``
+    to compose a full Elasticsearch query and hands it to the gateway's
+    ``search_query`` method.
+
+    All the policy lives behind the ``RelevanceQueryComposer`` Protocol.
+    This strategy is only the mechanism that selects that policy; it
+    holds no policy itself.
+    """
+
+    name = "relevant"
+
+    def __init__(self, composer: RelevanceQueryComposer) -> None:
+        self._composer = composer
+
+    def execute(
+        self,
+        query: SearchQuery,
+        gateway: ProductSearchGateway,
+    ) -> SearchResults:
+        composed = self._composer.build(query.text)
+        return gateway.search_query(composed, query.pagination)
+
+
 def _normalize_text(text: str) -> str:
     """Lowercase and collapse internal whitespace to single spaces."""
     return " ".join(text.lower().split())
@@ -81,4 +122,5 @@ def _normalize_text(text: str) -> str:
 __all__ = [
     "LiteralSearchStrategy",
     "NormalizedSearchStrategy",
+    "RelevantSearchStrategy",
 ]

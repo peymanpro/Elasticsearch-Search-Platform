@@ -30,6 +30,7 @@ class _RecordingGateway:
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, Pagination]] = []
+        self.query_calls: list[tuple[dict, Pagination]] = []
         self._result = SearchResults(
             query=SearchQuery.create("recorded"),
             total=0,
@@ -38,6 +39,10 @@ class _RecordingGateway:
 
     def search(self, text: str, pagination: Pagination) -> SearchResults:
         self.calls.append((text, pagination))
+        return self._result
+
+    def search_query(self, query: dict, pagination: Pagination) -> SearchResults:
+        self.query_calls.append((query, pagination))
         return self._result
 
 

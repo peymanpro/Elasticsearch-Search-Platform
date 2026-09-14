@@ -44,23 +44,60 @@ class SearchIntent(StrEnum):
 
     LITERAL = "literal"
     NORMALIZED = "normalized"
+    RELEVANT = "relevant"
 
 
 @runtime_checkable
 class ProductSearchGateway(Protocol):
     """
-    Contract for executing a prepared search against the product catalog.
+    Contract for executing a search against the product catalog.
 
-    The gateway receives already-prepared text (whitespace, casing, and
-    any other transformations having been decided by the strategy) and a
-    ``Pagination``. It is responsible for returning ``SearchResults``.
+    Two entry points exist because two kinds of strategy exist:
 
-    Implementations of this port live in the infrastructure layer. They
-    are the only place that talks to Elasticsearch for search operations.
+    * ``search`` -- a text-based call for strategies that decide only
+      how the *text* is prepared (Literal, Normalized). The gateway
+      builds the query itself.
+    * ``search_query`` -- a query-based call for strategies that need
+      control over the full query composition (Relevant). The caller
+      supplies a complete query dictionary; the gateway executes it.
+
+    Both methods return ``SearchResults``. Implementations live in the
+    infrastructure layer and are the only place that talks to
+    Elasticsearch for search operations.
     """
 
     def search(self, text: str, pagination: Pagination) -> SearchResults:
-        """Execute a prepared search and return the matching products."""
+        """Execute a text search and return the matching products."""
+        ...
+
+    def search_query(self, query: dict, pagination: Pagination) -> SearchResults:
+        """
+        Execute a pre-built query and return the matching products.
+
+        The query is expected to be a complete Elasticsearch query
+        dictionary (a ``bool`` or ``function_score`` wrapper). The
+        gateway forwards it to Elasticsearch without modification; the
+        caller is responsible for its correctness.
+        """
+        ...
+
+
+@runtime_checkable
+class RelevanceQueryComposer(Protocol):
+    """
+    Contract for composing a relevance query from a text.
+
+    The application layer's relevance strategy depends on this Protocol,
+    not on any concrete composer. The composer that emits Elasticsearch
+    DSL lives in the infrastructure layer; the composition root wires
+    the concrete implementation into the strategy.
+
+    Returns a complete Elasticsearch query dictionary -- bool,
+    function_score, or any composition the policy requires.
+    """
+
+    def build(self, text: str) -> dict:
+        """Return the complete Elasticsearch query for ``text``."""
         ...
 
 
