@@ -226,3 +226,49 @@ forbids it. The only options are:
 This document and the JSON files are updated first; the index is
 recreated or a new version is created second.
 
+
+## 8. Index Naming Convention (Phase 6.6)
+
+### 8.1 The convention
+
+Two names exist for each index version, and they have distinct jobs:
+
+| Name | Example | Purpose |
+|---|---|---|
+| Physical | products-v1 | The actual Elasticsearch index. Versioned. |
+| Alias | products | The name the application uses. Unversioned. |
+
+The application never references the physical name directly. It
+references the alias. The alias is repointed from v1 to v2 during a
+reindex (Phase 18), and the application continues to work without
+change.
+
+### 8.2 Rules
+
+1. The physical name always carries the version suffix. `products-`
+   is the prefix; `v1`, `v2`, `v3` are the versions. No other
+   suffixes are used.
+2. The alias is short, unversioned, and never carries a suffix.
+3. A new physical index is created when, and only when, the mapping
+   or settings change. A document change does not require a new
+   index.
+4. The physical index is deleted only after the alias has been moved
+   away and the new index has been validated.
+
+### 8.3 Where this is implemented
+
+The physical naming convention is enforced by
+`infrastructure.elasticsearch.indices.manager.physical_index_name`,
+which returns `f"products-{version}"`. The alias constant lives in
+`infrastructure.elasticsearch.indices.INDEX_ALIAS`. Phase 18 wires
+them together into the reindex workflow.
+
+### 8.4 Why not the alias alone
+
+An alternative would be to create the index directly under the alias
+name and drop and recreate it on every schema change. This is
+rejected: an alias switch is atomic and reindexable, a drop-and-
+recreate is not. The versioned-physical-plus-alias pattern is the
+standard Elasticsearch practice and Phase 18 exists to demonstrate
+it end to end.
+
