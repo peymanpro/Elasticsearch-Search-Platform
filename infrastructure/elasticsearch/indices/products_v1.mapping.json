@@ -1,0 +1,75 @@
+{
+  "dynamic": "strict",
+  "properties": {
+    "id": {
+      "type": "keyword"
+    },
+    "sku": {
+      "type": "keyword"
+    },
+    "name": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "brand": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "category": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "description": {
+      "type": "text"
+    },
+    "tags": {
+      "type": "text",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "specifications": {
+      "type": "flattened"
+    },
+    "language": {
+      "type": "keyword"
+    },
+    "price": {
+      "type": "double"
+    },
+    "currency": {
+      "type": "keyword"
+    },
+    "rating": {
+      "type": "double"
+    },
+    "availability": {
+      "type": "keyword"
+    },
+    "created_at": {
+      "type": "date",
+      "format": "strict_date_optional_time"
+    },
+    "popularity": {
+      "type": "long"
+    }
+  }
+}
