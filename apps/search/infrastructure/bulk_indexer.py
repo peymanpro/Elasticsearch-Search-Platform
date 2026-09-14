@@ -16,6 +16,7 @@ from collections.abc import Iterable, Iterator
 from typing import Any
 
 from elastic_transport import ConnectionError as TransportConnectionError
+from elastic_transport import ConnectionTimeout
 
 from apps.search.domain.indexing import IndexingFailure, IndexingResult
 from apps.search.domain.product_document import ProductDocument
@@ -321,12 +322,23 @@ def _is_transient(exc: Exception) -> bool:
     """
     Return True if the exception is a transient failure worth retrying.
 
-    A TransportError carries an HTTP status when the server responded
-    with an error code; the platform treats 429, 502, 503, and 504 as
-    transient. A TransportConnectionError is a network-level failure
-    and is always treated as transient.
+    Three categories are transient:
+
+    * ``TransportConnectionError`` -- the network could not deliver the
+      request (connection refused, peer reset, DNS failure). The next
+      attempt may well succeed.
+    * ``ConnectionTimeout`` -- the connection was established but the
+      server did not respond within the configured timeout. A timeout
+      is a classic transient failure: the cluster may have been busy
+      with an unrelated operation and will accept the same request on
+      the next attempt. Note that ``ConnectionTimeout`` is a sibling
+      of ``ConnectionError`` under ``TransportError``, not a subclass,
+      so the isinstance check must be separate.
+    * A ``TransportError`` whose HTTP status is one of the transient
+      statuses (429, 502, 503, 504). These are server-side conditions
+      that can resolve on their own.
     """
-    if isinstance(exc, TransportConnectionError):
+    if isinstance(exc, (TransportConnectionError, ConnectionTimeout)):
         return True
     status = getattr(exc, "status_code", None)
     if isinstance(status, int):
