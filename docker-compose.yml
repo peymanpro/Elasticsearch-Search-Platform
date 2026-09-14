@@ -29,7 +29,7 @@
 # ----------------------------------------------------------------------------
 #
 # The configuration disables X-Pack security. Appropriate for local
-# development only. See docs/02-non-goals.md § 3.6: this project is a
+# development only. See docs/02-non-goals.md section 3.6: this project is a
 # technical demonstration, not a production deployment.
 
 services:
@@ -77,13 +77,17 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: esp-web
-    # Run Django's built-in migrations before starting the server. The
-    # platform does not use a relational database as its system of record
-    # (docs/02-non-goals.md section 3.3), but Django's bundled apps
-    # (contenttypes, auth) ship migrations that DRF expects to be applied.
-    # Because the database is in-memory SQLite, running migrate is cheap
-    # and idempotent on each container start, and prevents the
-    # "You have N unapplied migration(s)" warning from being printed.
+    # Django's bundled apps (contenttypes, auth) ship migrations that the
+    # framework expects to be applied. We therefore run `migrate` before
+    # `runserver` so that the application boots against a consistent
+    # database state and Django does not print the "unapplied migrations"
+    # warning on every container start.
+    #
+    # The database is an SQLite file inside the container (see
+    # DJANGO_SQLITE_PATH below), not an in-memory database. A file is
+    # required because `migrate` and `runserver` are separate processes:
+    # an in-memory database created by `migrate` would be discarded when
+    # that process exits and would not be visible to `runserver`.
     command:
       - "sh"
       - "-c"
@@ -93,18 +97,8 @@ services:
       - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,web
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       # Persist Django's framework SQLite database to a file inside the
-      # container. The container runs `migrate` and `runserver` as separate
-      # processes; an in-memory database would not survive between them, and
-      # Django would print the "unapplied migrations" warning on every boot.
-      # The path is intentionally inside /tmp so it never touches the mounted
-      # source tree.
-      - DJANGO_SQLITE_PATH=/tmp/esp-db.sqlite3
-      # Persist Django's framework SQLite database to a file inside the
-      # container. The container runs `migrate` and `runserver` as separate
-      # processes; an in-memory database would not survive between them, and
-      # Django would print the "unapplied migrations" warning on every boot.
-      # The path is intentionally inside /tmp so it never touches the mounted
-      # source tree.
+      # container. The path is inside /tmp so it never touches the mounted
+      # source tree and is discarded when the container is removed.
       - DJANGO_SQLITE_PATH=/tmp/esp-db.sqlite3
     volumes:
       - .:/app

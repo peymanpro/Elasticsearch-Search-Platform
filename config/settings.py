@@ -106,7 +106,7 @@ ASGI_APPLICATION = "config.asgi.application"
 #     required because the container runs `migrate` and `runserver` as
 #     two separate processes; an in-memory database would be created by
 #     `migrate`, discarded when that process exits, and then missing when
-#     `runserver` starts — which causes Django to print the "unapplied
+#     `runserver` starts - which causes Django to print the "unapplied
 #     migrations" warning on every boot.
 SQLITE_PATH = os.environ.get("DJANGO_SQLITE_PATH", ":memory:")
 
