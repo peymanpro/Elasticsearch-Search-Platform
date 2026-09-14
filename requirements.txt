@@ -14,3 +14,6 @@ djangorestframework>=3.16,<4.0
 # Pinned to the 8.x series to match the Elasticsearch server version
 # configured for local development in Docker Compose (Phase 1.6).
 elasticsearch>=8.15,<9.0
+
+# Phase 1.5 - OpenAPI 3 schema generation and Swagger UI.
+drf-spectacular>=0.28,<1.0

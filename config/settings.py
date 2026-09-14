@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
 ]
 
 
@@ -124,6 +125,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # pagination, custom exception handling, filtering backends) is added at the
 # phase that introduces it, with a recorded rationale.
 REST_FRAMEWORK = {
+    # drf-spectacular requires DRF to use its AutoSchema. Without this
+    # setting, DRF falls back to rest_framework.schemas.openapi.AutoSchema,
+    # and drf-spectacular's generator refuses to process any view, raising
+    # an AssertionError on schema generation.
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_RENDERER_CLASSES": (
         [
             "rest_framework.renderers.JSONRenderer",
@@ -144,6 +150,30 @@ REST_FRAMEWORK = {
 }
 
 
+# ---------------------------------------------------------------------------
+# OpenAPI / Swagger (drf-spectacular)
+# ---------------------------------------------------------------------------
+# The schema is generated from DRF view metadata and drf-spectacular
+# annotations. Its purpose is threefold: human-readable API documentation
+# (Swagger UI), machine-readable contract for clients, and a regression
+# surface — tests assert the schema generates successfully, which catches
+# decorator drift as the API grows.
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Elasticsearch Search Platform API",
+    "DESCRIPTION": (
+        "A search platform over a medical-products catalog, built on "
+        "Elasticsearch and exposed through Django REST Framework.\n\n"
+        "The repository demonstrates explicit mappings, custom analyzers, "
+        "relevance engineering, fuzzy and phrase matching, synonyms, "
+        "autocomplete, filtering, faceted search, highlighting, "
+        "explainability, bulk indexing, and zero-downtime reindexing."
+    ),
+    "VERSION": "0.1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": "/api/",
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SORT_OPERATIONS": False,
+}
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
