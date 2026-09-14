@@ -85,5 +85,8 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "integration: test requires a running Elasticsearch (see docker-compose.yml)",
+]
 DJANGO_SETTINGS_MODULE = "config.settings"
 pythonpath = ["."]

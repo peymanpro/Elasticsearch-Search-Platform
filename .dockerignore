@@ -1,0 +1,50 @@
+# Files that must never be sent to the Docker build context.
+# Keeping this list tight speeds up builds and prevents secrets from
+# leaking into image layers.
+
+# --- Git ---
+.git
+.gitignore
+.gitattributes
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# --- Testing / coverage ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# --- Editor / IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# --- Project-specific ---
+docs/
+scripts/
+benchmarks/results/
+data/generated/
+*.local.json
+
+# --- Local environment ---
+.env
+.env.*
+!.env.example
