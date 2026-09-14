@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.staticfiles",
     "rest_framework",
+    "apps.search",
     "drf_spectacular",
 ]
 
