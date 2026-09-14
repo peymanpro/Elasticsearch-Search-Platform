@@ -9,3 +9,8 @@ python-dotenv>=1.0,<2.0
 
 # Phase 1.3 - Django REST Framework
 djangorestframework>=3.16,<4.0
+
+# Phase 1.4 - Official Elasticsearch Python client.
+# Pinned to the 8.x series to match the Elasticsearch server version
+# configured for local development in Docker Compose (Phase 1.6).
+elasticsearch>=8.15,<9.0
