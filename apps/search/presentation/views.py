@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -37,7 +37,17 @@ from apps.search.presentation.composition import (
     build_search_products_use_case,
     build_search_with_facets_use_case,
 )
+from apps.search.presentation.openapi_examples import (
+    EXPLAIN_EXAMPLE,
+    SEARCH_EXAMPLE_CURSOR,
+    SEARCH_EXAMPLE_FACETED,
+    SEARCH_EXAMPLE_FILTERED,
+    SEARCH_EXAMPLE_SIMPLE,
+    SUGGEST_EXAMPLE_LIMIT,
+    SUGGEST_EXAMPLE_QUERY,
+)
 from apps.search.presentation.serializers import (
+    ApiErrorSerializer,
     ExplainRequestSerializer,
     ExplainResponseSerializer,
     HealthResponseSerializer,
@@ -85,12 +95,43 @@ class SearchView(APIView):
 
     @extend_schema(
         request=SearchRequestSerializer,
-        responses=SearchResponseSerializer,
+        responses={
+            200: SearchResponseSerializer,
+            400: ApiErrorSerializer,
+            503: ApiErrorSerializer,
+            504: ApiErrorSerializer,
+        },
         description=(
             "Search the product catalog. Supports filtering, business "
             "sorting, cursor and offset pagination, highlighting, and "
             "(optionally) faceted navigation."
         ),
+        examples=[
+            OpenApiExample(
+                "Simple",
+                value=SEARCH_EXAMPLE_SIMPLE,
+                request_only=True,
+                description="Full-text search with default pagination and relevance order.",
+            ),
+            OpenApiExample(
+                "Filtered",
+                value=SEARCH_EXAMPLE_FILTERED,
+                request_only=True,
+                description="Category and price filters with price-ascending sort.",
+            ),
+            OpenApiExample(
+                "Faceted",
+                value=SEARCH_EXAMPLE_FACETED,
+                request_only=True,
+                description="Search with facet counts included in the response.",
+            ),
+            OpenApiExample(
+                "Cursor pagination",
+                value=SEARCH_EXAMPLE_CURSOR,
+                request_only=True,
+                description="Cursor-based pagination using a value from a prior response.",
+            ),
+        ],
         tags=["search"],
     )
     def post(self, request: Request) -> Response:
@@ -132,8 +173,34 @@ class SuggestView(APIView):
     """Return autocomplete suggestions for a prefix."""
 
     @extend_schema(
-        parameters=[SuggestRequestSerializer],
-        responses=SuggestResponseSerializer,
+        parameters=[
+            SuggestRequestSerializer,
+            OpenApiParameter(
+                "q",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Partial query text.",
+                examples=[
+                    OpenApiExample("Default", value=SUGGEST_EXAMPLE_QUERY),
+                ],
+            ),
+            OpenApiParameter(
+                "limit",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Maximum number of suggestions to return.",
+                examples=[
+                    OpenApiExample("Default", value=SUGGEST_EXAMPLE_LIMIT),
+                ],
+            ),
+        ],
+        responses={
+            200: SuggestResponseSerializer,
+            400: ApiErrorSerializer,
+            503: ApiErrorSerializer,
+        },
         description="Return autocomplete suggestions for a partial query.",
         tags=["search"],
     )
@@ -161,12 +228,24 @@ class ExplainView(APIView):
 
     @extend_schema(
         request=ExplainRequestSerializer,
-        responses=ExplainResponseSerializer,
+        responses={
+            200: ExplainResponseSerializer,
+            400: ApiErrorSerializer,
+            503: ApiErrorSerializer,
+            504: ApiErrorSerializer,
+        },
         description=(
             "Return the scoring breakdown for a (query, document_id) "
             "pair. If the document does not match, matched is false and "
             "explanation is null."
         ),
+        examples=[
+            OpenApiExample(
+                "Explain a document",
+                value=EXPLAIN_EXAMPLE,
+                request_only=True,
+            ),
+        ],
         tags=["search"],
     )
     def post(self, request: Request) -> Response:
@@ -191,13 +270,17 @@ class HealthView(APIView):
     """Report cluster and index health. See docs/24 section 6."""
 
     @extend_schema(
-        responses=HealthResponseSerializer,
+        responses={
+            200: HealthResponseSerializer,
+            503: ApiErrorSerializer,
+        },
         description=(
             "Report the platform's ability to serve searches. The "
             "status is healthy when the cluster is reachable, the "
             "alias resolves, and the index has documents; degraded "
             "when one of those is false; unhealthy when the cluster "
-            "is unreachable."
+            "is unreachable. The HTTP status is 200 in every case; "
+            "the JSON body carries the status."
         ),
         tags=["service"],
     )

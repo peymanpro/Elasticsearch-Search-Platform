@@ -242,3 +242,31 @@ class ServiceRootResponseSerializer(serializers.Serializer):
         choices=["healthy", "degraded"],
         help_text="Coarse service state derived from backend reachability.",
     )
+
+
+# ---------------------------------------------------------------------------
+# Error response (common shape)
+# ---------------------------------------------------------------------------
+class ApiErrorDetailSerializer(serializers.Serializer):
+    """
+    The inner ``error`` object of every error response.
+
+    Attributes:
+        code: Stable identifier the caller branches on.
+        message: Human-readable description.
+        details: Optional structured context. Absent when there is none.
+    """
+
+    code = serializers.CharField()
+    message = serializers.CharField()
+    details = serializers.DictField(required=False)
+
+
+class ApiErrorSerializer(serializers.Serializer):
+    """
+    The response body of every API error.
+
+    See docs/24-search-api.md section 7 and docs/25-openapi.md section 5.
+    """
+
+    error = ApiErrorDetailSerializer()
