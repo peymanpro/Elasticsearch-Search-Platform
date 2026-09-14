@@ -69,6 +69,10 @@ INSTALLED_APPS = [
 # ---------------------------------------------------------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Assigns a correlation ID to the request, stores it in a
+    # contextvar, and emits structured start/end log lines. See
+    # docs/29-observability.md section 6.
+    "apps.search.presentation.middleware.CorrelationIdMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
 
@@ -200,11 +204,43 @@ SPECTACULAR_SETTINGS = {
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        # Injects the current request's correlation ID onto every log
+        # record so the formatter can render it. See
+        # docs/29-observability.md section 8.
+        "correlation_id": {
+            "()": "apps.search.presentation.logging_filter.CorrelationIdFilter",
+        },
+    },
     "formatters": {
-        "standard": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"},
+        # The correlation ID is a bracketed field at the front so that
+        # a log line can be grepped by ID at a glance.
+        "standard": {
+            "format": "%(asctime)s %(levelname)s [%(correlation_id)s] %(name)s %(message)s",
+        },
     },
     "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "standard"},
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+            "filters": ["correlation_id"],
+        },
     },
     "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        # The platform's own loggers set their level explicitly and let
+        # records propagate to the root handler. Attaching handlers to
+        # each logger would cause double emission, and setting
+        # ``propagate: False`` would prevent pytest's caplog from
+        # seeing the records during tests. The root logger's console
+        # handler (above) is the single destination.
+        "apps.search": {
+            "level": "INFO",
+            "propagate": True,
+        },
+        "infrastructure.elasticsearch": {
+            "level": "INFO",
+            "propagate": True,
+        },
+    },
 }
