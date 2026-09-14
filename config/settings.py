@@ -164,6 +164,9 @@ REST_FRAMEWORK = {
     # demonstration surface, not a production service (docs/02-non-goals.md
     # section 2.1).
     "UNAUTHENTICATED_USER": None,
+    # The exception handler shapes domain errors and backend failures.
+    # See apps/search/presentation/exception_handler.py.
+    "EXCEPTION_HANDLER": "apps.search.presentation.exception_handler.api_exception_handler",
 }
 
 

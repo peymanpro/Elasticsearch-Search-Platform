@@ -140,6 +140,25 @@ def _relative(source_path: Path) -> str:
     return source_path.relative_to(REPO_ROOT).as_posix()
 
 
+def _is_sanctioned_composition_exception(layer: str, relative: str) -> bool:
+    """
+    True if a file is the composition root and the layer is presentation.
+
+    The composition root is the one place in the codebase whose
+    entire purpose is to construct concrete adapters and inject
+    them into use cases. To do that, it must import concrete
+    packages: the top-level Elasticsearch client package and the
+    app-local infrastructure layer. Every other file in the
+    presentation layer must go through a use case that was
+    constructed elsewhere.
+
+    This helper makes the exception explicit and consults it in
+    every branch of the rule loop below. A silent allowance in one
+    branch and a violation in another would be a bug.
+    """
+    return layer == "presentation" and relative == COMPOSITION_ROOT_RELATIVE
+
+
 def _violations_in_layer(layer: str) -> list[tuple[str, str]]:
     """Return a list of (file, forbidden_import) violations in a layer."""
     rules = LAYER_RULES[layer]
@@ -152,22 +171,31 @@ def _violations_in_layer(layer: str) -> list[tuple[str, str]]:
 
     for source_file in _python_files(layer_dir):
         relative = _relative(source_file)
+        is_composition = _is_sanctioned_composition_exception(layer, relative)
         imports = _collect_imports(source_file)
 
         for imported in imports:
             top_level = imported.split(".")[0]
 
             if not allow_frameworks and top_level in FRAMEWORK_PACKAGES:
+                if is_composition:
+                    continue
                 violations.append((relative, imported))
                 continue
 
             if not allow_top_level_client and top_level == TOP_LEVEL_CLIENT_PACKAGE:
+                # The composition root must import the top-level
+                # client package to obtain a client and to read the
+                # index alias. Every other presentation file must
+                # not.
+                if is_composition:
+                    continue
                 violations.append((relative, imported))
                 continue
 
             for prefix in forbidden_prefixes:
                 if imported == prefix or imported.startswith(prefix + "."):
-                    if layer == "presentation" and relative == COMPOSITION_ROOT_RELATIVE:
+                    if is_composition:
                         break
                     violations.append((relative, imported))
                     break
