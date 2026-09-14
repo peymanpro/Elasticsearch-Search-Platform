@@ -215,16 +215,15 @@ Then:
 All routes are defined in `apps/search/presentation/urls.py` and
 included by `config/urls.py`.
 
-| Method | Path            | Purpose                              |
-|--------|-----------------|--------------------------------------|
-| GET    | `/`             | Service root and metadata            |
-| GET    | `/api/search/`  | Product search with filters and sort |
-| POST   | `/api/search/`  | Product search with a JSON body      |
-| GET    | `/api/suggest/` | Autocomplete suggestions             |
-| GET    | `/api/explain/` | Score explanation for a query        |
-| GET    | `/api/health/`  | Elasticsearch and service health     |
-| GET    | `/api/schema/`  | OpenAPI schema                       |
-| GET    | `/api/docs/`    | Swagger UI                           |
+| Method | Path            | Purpose                                               |
+|--------|-----------------|-------------------------------------------------------|
+| GET    | `/`             | Service root and metadata                             |
+| POST   | `/api/search/`  | Search with filters, sort, facets, pagination         |
+| GET    | `/api/suggest/` | Autocomplete suggestions for a prefix                 |
+| POST   | `/api/explain/` | Scoring explanation for a (query, document_id) pair   |
+| GET    | `/api/health/`  | Cluster, alias, and index health                      |
+| GET    | `/api/schema/`  | OpenAPI schema                                        |
+| GET    | `/api/docs/`    | Swagger UI                                            |
 
 ---
 
