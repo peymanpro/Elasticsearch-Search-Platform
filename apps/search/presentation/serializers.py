@@ -15,4 +15,7 @@ class ServiceRootResponseSerializer(serializers.Serializer):
     """Response shape of the service-root endpoint."""
 
     service = serializers.CharField(help_text="Service identifier.")
-    status = serializers.CharField(help_text="Coarse service-status marker.")
+    status = serializers.ChoiceField(
+        choices=["healthy", "degraded"],
+        help_text="Coarse service state derived from backend reachability.",
+    )

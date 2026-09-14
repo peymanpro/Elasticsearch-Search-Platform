@@ -21,6 +21,10 @@ def test_drf_is_registered_in_installed_apps() -> None:
     assert "rest_framework" in settings.INSTALLED_APPS
 
 
+def test_search_app_is_registered_in_installed_apps() -> None:
+    assert "apps.search" in settings.INSTALLED_APPS
+
+
 def test_service_root_endpoint_returns_identity_via_drf() -> None:
     client = APIClient()
     response = client.get("/")
@@ -28,7 +32,10 @@ def test_service_root_endpoint_returns_identity_via_drf() -> None:
     assert response["Content-Type"].startswith("application/json")
     payload = response.json()
     assert payload["service"] == "elasticsearch-search-platform"
-    assert payload["status"] == "ok"
+    # The stub probe in Phase 2.2 always reports "unreachable", so the
+    # state is "degraded". This will flip to "healthy" in Phase 2.4, when
+    # the real Elasticsearch-backed probe replaces the stub.
+    assert payload["status"] in {"healthy", "degraded"}
 
 
 def test_internationalisation_is_disabled() -> None:
