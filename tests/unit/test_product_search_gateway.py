@@ -58,7 +58,7 @@ def test_gateway_satisfies_product_search_gateway_protocol() -> None:
 # ---------------------------------------------------------------------------
 # Request translation
 # ---------------------------------------------------------------------------
-def test_gateway_sends_a_match_clause_on_the_search_field() -> None:
+def test_gateway_sends_a_multi_match_clause_over_the_configured_fields() -> None:
     client = _FakeElasticsearchClient(_empty_response())
     gateway = ElasticsearchProductSearchGateway(client=client, index="products")
 
@@ -66,18 +66,31 @@ def test_gateway_sends_a_match_clause_on_the_search_field() -> None:
 
     call = client.calls[0]
     assert call["index"] == "products"
-    assert call["query"] == {"bool": {"must": [{"match": {"name": "monitor"}}]}}
+    assert call["query"] == {
+        "bool": {
+            "must": [
+                {
+                    "multi_match": {
+                        "query": "monitor",
+                        "fields": ["name", "brand", "category", "description", "tags"],
+                    }
+                }
+            ]
+        }
+    }
 
 
-def test_gateway_uses_configured_search_field() -> None:
+def test_gateway_uses_configured_search_fields() -> None:
     client = _FakeElasticsearchClient(_empty_response())
     gateway = ElasticsearchProductSearchGateway(
-        client=client, index="products", search_field="description"
+        client=client, index="products", search_fields=("name", "brand")
     )
 
     gateway.search(text="portable", pagination=Pagination())
 
-    assert client.calls[0]["query"] == {"bool": {"must": [{"match": {"description": "portable"}}]}}
+    assert client.calls[0]["query"] == {
+        "bool": {"must": [{"multi_match": {"query": "portable", "fields": ["name", "brand"]}}]}
+    }
 
 
 def test_gateway_translates_pagination_to_from_and_size() -> None:

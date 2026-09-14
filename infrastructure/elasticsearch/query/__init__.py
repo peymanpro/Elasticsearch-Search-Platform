@@ -22,6 +22,8 @@ from infrastructure.elasticsearch.query.builder import QueryBuilder
 from infrastructure.elasticsearch.query.clauses import (
     Clause,
     MatchClause,
+    MatchPhraseClause,
+    MultiMatchClause,
     RangeClause,
     TermClause,
 )
@@ -29,6 +31,8 @@ from infrastructure.elasticsearch.query.clauses import (
 __all__ = [
     "Clause",
     "MatchClause",
+    "MatchPhraseClause",
+    "MultiMatchClause",
     "QueryBuilder",
     "RangeClause",
     "TermClause",

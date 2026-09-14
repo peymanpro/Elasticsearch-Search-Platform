@@ -104,3 +104,54 @@ class RangeClause(Clause):
         if self.lt is not None:
             body["lt"] = self.lt
         return {"range": {self.field: body}}
+
+
+@dataclass(frozen=True, slots=True)
+class MultiMatchClause(Clause):
+    """
+    Full-text search across multiple fields in one clause.
+
+    The canonical clause for "search the product, not one field of
+    it". Elasticsearch scores each field independently and combines
+    the scores. Per-field weights are supplied through the field
+    string convention field^boost (for example "name^3"), not through
+    a separate parameter.
+
+    The default operator is "or": any of the query terms may match
+    any of the fields. This is the least surprising default for a
+    general catalog and matches what most users expect from a search
+    box.
+    """
+
+    fields: tuple[str, ...]
+    value: str
+
+    def to_dsl(self) -> dict[str, Any]:
+        return {"multi_match": {"query": self.value, "fields": list(self.fields)}}
+
+
+@dataclass(frozen=True, slots=True)
+class MatchPhraseClause(Clause):
+    """
+    Full-text phrase clause.
+
+    Matches only if the query terms appear in the document in the
+    same order and without intervening terms. Used for multi-word
+    queries where word order is semantic ("wireless headphones"
+    should not match "wireless connection for headphones").
+
+    Elasticsearch also supports a ``slop`` parameter that allows a
+    small number of intervening tokens. It is deliberately not
+    exposed here: slop is a relevance-tuning knob, and relevance is
+    Phase 9. If a future phase needs it, this clause grows a slop
+    field with its own rationale.
+    """
+
+    field: str
+    value: str
+    boost: float | None = None
+
+    def to_dsl(self) -> dict[str, Any]:
+        if self.boost is None:
+            return {"match_phrase": {self.field: self.value}}
+        return {"match_phrase": {self.field: {"query": self.value, "boost": self.boost}}}

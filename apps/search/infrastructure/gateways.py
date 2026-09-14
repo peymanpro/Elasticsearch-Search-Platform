@@ -38,13 +38,18 @@ from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchHit, SearchResults
 from elasticsearch import Elasticsearch
 from infrastructure.elasticsearch.query.builder import QueryBuilder
-from infrastructure.elasticsearch.query.clauses import MatchClause
+from infrastructure.elasticsearch.query.clauses import MultiMatchClause
 
-# The single field searched at Phase 3.7. Phase 6 (mapping) will decide
-# which fields exist; Phase 8 will compose multi-field queries; Phase 9
-# will assign boosts. For now the adapter queries one field so that the
-# request path is exercised end to end.
-DEFAULT_SEARCH_FIELD = "name"
+# Fields searched by the multi_match clause. Phase 9 will adjust these
+# with per-field boosts (name^3 etc.). For Phase 8 they are the five
+# text-searchable fields from product_schema.py, unweighted.
+DEFAULT_SEARCH_FIELDS: tuple[str, ...] = (
+    "name",
+    "brand",
+    "category",
+    "description",
+    "tags",
+)
 
 
 class ElasticsearchProductSearchGateway:
@@ -60,30 +65,32 @@ class ElasticsearchProductSearchGateway:
         index: The index or alias to search. At Phase 3.7 this is a
             plain string; Phase 18 will introduce an alias that points
             at a versioned physical index.
-        search_field: The document field matched by the text query.
-            Defaults to ``name``. Overridable so that later phases can
-            change the field without modifying the adapter.
+        search_fields: The document fields matched by the text query.
+            Defaults to the five text-searchable product fields.
     """
 
     def __init__(
         self,
         client: Elasticsearch,
         index: str,
-        search_field: str = DEFAULT_SEARCH_FIELD,
+        search_fields: tuple[str, ...] = DEFAULT_SEARCH_FIELDS,
     ) -> None:
         self._client = client
         self._index = index
-        self._search_field = search_field
+        self._search_fields = search_fields
 
     def search(self, text: str, pagination: Pagination) -> SearchResults:
         """
         Search the catalog for ``text`` and return the matching products.
 
-        The adapter builds a ``bool`` query with a single ``must`` clause
-        that matches ``text`` against ``search_field``, delegates to the
-        client, and translates the response into domain value objects.
+        The adapter builds a ``bool`` query with a single ``must``
+        clause containing a ``multi_match`` over ``search_fields``,
+        delegates to the client, and translates the response into
+        domain value objects.
         """
-        query = QueryBuilder().must(MatchClause(field=self._search_field, value=text)).build()
+        query = (
+            QueryBuilder().must(MultiMatchClause(fields=self._search_fields, value=text)).build()
+        )
 
         response = self._client.search(
             index=self._index,
