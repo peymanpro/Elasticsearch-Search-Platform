@@ -9,6 +9,7 @@
     },
     "name": {
       "type": "text",
+      "analyzer": "product_text_analyzer",
       "fields": {
         "keyword": {
           "type": "keyword",
@@ -18,6 +19,7 @@
     },
     "brand": {
       "type": "text",
+      "analyzer": "product_keyword_analyzer",
       "fields": {
         "keyword": {
           "type": "keyword",
@@ -27,6 +29,7 @@
     },
     "category": {
       "type": "text",
+      "analyzer": "product_keyword_analyzer",
       "fields": {
         "keyword": {
           "type": "keyword",
@@ -35,10 +38,12 @@
       }
     },
     "description": {
-      "type": "text"
+      "type": "text",
+      "analyzer": "product_text_analyzer"
     },
     "tags": {
       "type": "text",
+      "analyzer": "product_keyword_analyzer",
       "fields": {
         "keyword": {
           "type": "keyword",

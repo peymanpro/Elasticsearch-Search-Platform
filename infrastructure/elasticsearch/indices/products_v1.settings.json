@@ -1,5 +1,19 @@
 {
   "number_of_shards": 1,
   "number_of_replicas": 0,
-  "refresh_interval": "1s"
+  "refresh_interval": "1s",
+  "analysis": {
+    "analyzer": {
+      "product_text_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding", "stop", "porter_stem"]
+      },
+      "product_keyword_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": ["lowercase", "asciifolding"]
+      }
+    }
+  }
 }
