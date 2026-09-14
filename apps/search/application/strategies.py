@@ -21,7 +21,6 @@ the domain contracts, or any existing strategy.
 
 from __future__ import annotations
 
-from apps.search.domain.pagination import Pagination
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchResults
 from apps.search.domain.strategies import ProductSearchGateway
@@ -83,9 +82,3 @@ __all__ = [
     "LiteralSearchStrategy",
     "NormalizedSearchStrategy",
 ]
-
-
-# ---------------------------------------------------------------------------
-# Re-exported here so the selector and tests import from one place.
-# ---------------------------------------------------------------------------
-_ = Pagination  # keep the import meaningful for future use; explicit no-op
