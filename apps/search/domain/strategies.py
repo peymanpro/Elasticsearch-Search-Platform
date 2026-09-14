@@ -29,6 +29,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
+from apps.search.domain.explanation import ExplainResult
 from apps.search.domain.facets import FacetedSearchResults
 from apps.search.domain.filters import ProductFilters
 from apps.search.domain.pagination import Pagination
@@ -131,6 +132,23 @@ class FuzzyQueryComposer(Protocol):
 
     def build(self, text: str, filters: ProductFilters | None = None) -> dict:
         """Return the complete Elasticsearch fuzzy query for ``text``."""
+        ...
+
+
+@runtime_checkable
+class ProductExplainer(Protocol):
+    """
+    Contract for explaining a (query, document) pair.
+
+    The input is a fully composed Elasticsearch query dictionary and a
+    document id. The explainer forwards the query to the search engine
+    and returns the scoring breakdown. It does not build queries; it
+    only asks the engine why a specific document matched a specific
+    query. See docs/21-explainability.md section 5.
+    """
+
+    def explain(self, query: dict, document_id: str) -> ExplainResult:
+        """Return the explanation for the given query and document."""
         ...
 
 

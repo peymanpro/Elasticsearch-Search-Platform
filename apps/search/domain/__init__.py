@@ -16,6 +16,10 @@ from apps.search.domain.exceptions import (
     InvalidPaginationError,
     InvalidSearchQueryError,
 )
+from apps.search.domain.explanation import (
+    ExplainResult,
+    ScoreExplanation,
+)
 from apps.search.domain.facets import (
     FacetBucket,
     FacetedSearchResults,
@@ -37,6 +41,7 @@ from apps.search.domain.sorting import (
     SortOrder,
 )
 from apps.search.domain.strategies import (
+    ProductExplainer,
     ProductFacetGateway,
     ProductSearchGateway,
     ProductSuggester,
@@ -52,6 +57,7 @@ __all__ = [
     "ClusterHealthProbe",
     "DEFAULT_SORT_ORDER",
     "DomainError",
+    "ExplainResult",
     "FacetBucket",
     "FacetResults",
     "FacetedSearchResults",
@@ -61,11 +67,13 @@ __all__ = [
     "InvalidSuggestQueryError",
     "Pagination",
     "ProductFilters",
+    "ProductExplainer",
     "ProductFacetGateway",
     "ProductSearchGateway",
     "ProductSuggester",
     "SearchExecutionStrategy",
     "SearchHit",
+    "ScoreExplanation",
     "SearchIntent",
     "SearchQuery",
     "SearchResults",
