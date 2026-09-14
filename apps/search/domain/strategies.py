@@ -26,13 +26,16 @@ None of those phases will need to modify the contracts defined here.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from apps.search.domain.explanation import ExplainResult
 from apps.search.domain.facets import FacetedSearchResults
 from apps.search.domain.filters import ProductFilters
+from apps.search.domain.indexing import IndexingResult
 from apps.search.domain.pagination import Pagination
+from apps.search.domain.product_document import ProductDocument
 from apps.search.domain.search_query import SearchQuery
 from apps.search.domain.search_result import SearchResults
 from apps.search.domain.sorting import SortOrder
@@ -149,6 +152,29 @@ class ProductExplainer(Protocol):
 
     def explain(self, query: dict, document_id: str) -> ExplainResult:
         """Return the explanation for the given query and document."""
+        ...
+
+
+@runtime_checkable
+class ProductIndexer(Protocol):
+    """
+    Contract for writing product documents to the search backend.
+
+    Two operations: index a stream of documents, and delete a stream
+    of document ids. Both return an ``IndexingResult`` describing what
+    succeeded and what failed. Neither raises for individual document
+    failures; both raise only for whole-batch failures that are not
+    transient.
+
+    See docs/22-indexing.md.
+    """
+
+    def index_products(self, documents: Iterable[ProductDocument]) -> IndexingResult:
+        """Write product documents to the index."""
+        ...
+
+    def delete_documents(self, document_ids: Iterable[str]) -> IndexingResult:
+        """Delete documents by id."""
         ...
 
 

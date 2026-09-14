@@ -29,6 +29,10 @@ from apps.search.domain.filters import (
     InvalidFiltersError,
     ProductFilters,
 )
+from apps.search.domain.indexing import (
+    IndexingFailure,
+    IndexingResult,
+)
 from apps.search.domain.pagination import Pagination
 from apps.search.domain.ports import ClusterHealthProbe
 from apps.search.domain.search_query import SearchQuery
@@ -43,6 +47,7 @@ from apps.search.domain.sorting import (
 from apps.search.domain.strategies import (
     ProductExplainer,
     ProductFacetGateway,
+    ProductIndexer,
     ProductSearchGateway,
     ProductSuggester,
     SearchExecutionStrategy,
@@ -61,6 +66,8 @@ __all__ = [
     "FacetBucket",
     "FacetResults",
     "FacetedSearchResults",
+    "IndexingFailure",
+    "IndexingResult",
     "InvalidFiltersError",
     "InvalidPaginationError",
     "InvalidSearchQueryError",
@@ -69,6 +76,7 @@ __all__ = [
     "ProductFilters",
     "ProductExplainer",
     "ProductFacetGateway",
+    "ProductIndexer",
     "ProductSearchGateway",
     "ProductSuggester",
     "SearchExecutionStrategy",

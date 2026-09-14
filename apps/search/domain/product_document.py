@@ -3,15 +3,15 @@ Domain value object representing a product document.
 
 A ProductDocument is the in-memory shape of one line of the JSONL
 dataset and one Elasticsearch document. It is created by the dataset
-reader (Phase 4.2) and will be the input to the bulk indexer
-(Phase 17). It is frozen: constructing a valid document is the only
-way to get one, and no later stage can mutate it.
+reader (Phase 4.2) and is the input to the bulk indexer (Phase 17). It
+is frozen: constructing a valid document is the only way to get one,
+and no later stage can mutate it.
 
 The class deliberately does not validate business rules beyond the
 shape of a single document. Cross-document invariants (a brand's
 products all agree on its name, a category is spelled consistently)
-are dataset-level concerns and belong to the dataset validation in
-Phase 4.5, not here.
+are dataset-level concerns and belong to the dataset generator and its
+validation step in Phase 4.5, not here.
 
 Nothing in this module imports Django, Django REST Framework, or the
 Elasticsearch client. The architecture tests enforce this.
@@ -101,6 +101,36 @@ class ProductDocument:
             created_at=_parse_iso_datetime(raw["created_at"]),
             popularity=int(raw["popularity"]),
         )
+
+    def to_mapping(self) -> dict[str, Any]:
+        """
+        Return this document as a JSON-serializable dict.
+
+        The output is the reverse of ``from_mapping``: enums become
+        their string values, the tags tuple becomes a list, the Decimal
+        price becomes a float, and the datetime becomes an ISO 8601
+        string.
+
+        The result is suitable for indexing into Elasticsearch via the
+        bulk indexer, and for round-tripping through the JSONL reader.
+        """
+        return {
+            "id": self.id,
+            "sku": self.sku,
+            "name": self.name,
+            "brand": self.brand,
+            "category": self.category,
+            "description": self.description,
+            "tags": list(self.tags),
+            "specifications": dict(self.specifications),
+            "language": self.language.value,
+            "price": float(self.price),
+            "currency": self.currency.value,
+            "rating": self.rating,
+            "availability": self.availability.value,
+            "created_at": self.created_at.isoformat(),
+            "popularity": self.popularity,
+        }
 
 
 def _parse_iso_datetime(value: str) -> datetime:
