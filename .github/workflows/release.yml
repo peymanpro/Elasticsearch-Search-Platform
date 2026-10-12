@@ -68,35 +68,34 @@ jobs:
           echo "tag=v$project_version" >> "$GITHUB_OUTPUT"
           echo "target_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-        if: steps.version.outputs.skip != 'true'
       - name: Install application and quality dependencies
+        if: steps.version.outputs.skip != 'true'
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-        if: steps.version.outputs.skip != 'true'
       - name: Ruff
+        if: steps.version.outputs.skip != 'true'
         run: ruff check .
 
-        if: steps.version.outputs.skip != 'true'
-        if: steps.version.outputs.skip != 'true'
       - name: Unit tests
+        if: steps.version.outputs.skip != 'true'
         run: pytest -m "not integration"
 
-        if: steps.version.outputs.skip != 'true'
       - name: Django system check
+        if: steps.version.outputs.skip != 'true'
         env:
           DJANGO_DEBUG: "true"
           DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
           ELASTICSEARCH_URL: "http://127.0.0.1:9200"
         run: python manage.py check
 
-        if: steps.version.outputs.skip != 'true'
       - name: Build container
+        if: steps.version.outputs.skip != 'true'
         run: docker build --tag elasticsearch-search-platform:release .
 
-        if: steps.version.outputs.skip != 'true'
       - name: Publish GitHub Release if not already published
+        if: steps.version.outputs.skip != 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
