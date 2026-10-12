@@ -523,8 +523,7 @@ The full list and reasoning is in
 
 ## Companion frontend
 
-[Search Lens — Elasticsearch Search Platform Frontend](https://github.com/peymanpro/Elasticsearch-Search-Platform-Frontend) is the companion web client for exploring search tasks through a typed UI, query state, result presentation, and frontend testing. This repository remains the backend/search-engine implementation; the client is maintained separately.
-
+[Search Lens — Elasticsearch Search Platform Frontend](https://github.com/peymanpro/Elasticsearch-Search-Platform-Frontend) is the companion web client for exploring search tasks through a typed UI, query state, result presentation, and frontend testing. This backend repository owns index/search behavior and API responses; the client is maintained separately. Running both repositories together supports an end-to-end review of the search workflow.
 ## License
 
 Proprietary. See `pyproject.toml`.
