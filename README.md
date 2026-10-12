@@ -529,7 +529,7 @@ The full list and reasoning is in
 
 A version-driven GitHub Actions workflow validates `[project].version` in `pyproject.toml` and runs Ruff, the non-integration test suite, Django's system check, and a Docker image build before publishing a GitHub Release with generated release notes. Live Elasticsearch integration tests remain a separate environment-dependent concern.
 
-For a future release, increment the version in `pyproject.toml` and push to `main`, or push a matching `vMAJOR.MINOR.PATCH` tag. The workflow will not reuse an existing tag for newer code. Its automated release gate excludes tests marked `integration`; run those separately against a live Elasticsearch stack when validating cluster-specific behavior.
+For a future release, increment the version in `pyproject.toml` and push to `main`, or push a matching `vMAJOR.MINOR.PATCH` tag. The workflow will not reuse an existing tag for newer code. Its automated release gate excludes tests marked `integration`; run those separately against a live Elasticsearch stack when validating cluster-specific behavior. The workflow builds a Docker image but does not push it to a container registry.
 
 ## License
 
