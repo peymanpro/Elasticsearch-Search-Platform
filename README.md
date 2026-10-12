@@ -524,6 +524,13 @@ The full list and reasoning is in
 ## Companion frontend
 
 [Search Lens — Elasticsearch Search Platform Frontend](https://github.com/peymanpro/Elasticsearch-Search-Platform-Frontend) is the companion web client for exploring search tasks through a typed UI, query state, result presentation, and frontend testing. This backend repository owns index/search behavior and API responses; the client is maintained separately. Running both repositories together supports an end-to-end review of the search workflow.
+
+## Automated releases
+
+A version-driven GitHub Actions workflow validates `[project].version` in `pyproject.toml` and runs Ruff, the non-integration test suite, Django's system check, and a Docker image build before publishing a GitHub Release with generated release notes. Live Elasticsearch integration tests remain a separate environment-dependent concern.
+
+For a future release, increment the version in `pyproject.toml` and push to `main`, or push a matching `vMAJOR.MINOR.PATCH` tag. The workflow will not reuse an existing tag for newer code.
+
 ## License
 
 Proprietary. See `pyproject.toml`.
